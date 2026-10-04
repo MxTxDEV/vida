@@ -1,8 +1,9 @@
 'use client'
 
-import { Bar, PageHeader, Panel, Ready, Stat, num } from '@/components/bits'
+import { Bar, Bars, PageHeader, Panel, Ready, Stat, num } from '@/components/bits'
 import { Sheet, type Col } from '@/components/sheet'
-import { addDays, inRange, today, weekStart } from '@/lib/dates'
+import { addDays, fmtShort, inRange, today, weekStart } from '@/lib/dates'
+import { lastWeeks } from '@/lib/periods'
 import { addItem, removeItem, updateItem, useApp } from '@/lib/store'
 import type { Book, Reading } from '@/lib/types'
 
@@ -25,6 +26,11 @@ function Reading() {
 	const rows = [...s.readings].sort((a, b) => b.date.localeCompare(a.date))
 	const read = (id: string) => s.readings.filter((r) => r.bookId === id).reduce((n, r) => n + r.pages, 0)
 
+	const weeks = lastWeeks(8).map((w) => ({
+		label: fmtShort(w),
+		v: s.readings.filter((x) => inRange(x.date, { from: w, to: addDays(w, 6) })).reduce((n, x) => n + x.pages, 0),
+	}))
+
 	const cols: Col<Reading>[] = [
 		{ key: 'date', label: 'Data', type: 'date', w: '140px' },
 		{ key: 'bookId', label: 'Livro', type: 'select', w: 'minmax(200px,1fr)', options: bookOpts, placeholder: '— escolha —' },
@@ -41,6 +47,9 @@ function Reading() {
 						<Stat label="Páginas no total" value={num(total)} />
 						<Stat label="Livros terminados" value={done} />
 					</div>
+				</Panel>
+				<Panel title="Páginas por semana" meta="últimas 8 semanas">
+					<Bars data={weeks} color="pink" height={96} />
 				</Panel>
 				<Panel title="Livros">
 					<Sheet<Book>
@@ -59,7 +68,7 @@ function Reading() {
 					{s.books.some((b) => b.total > 0) && (
 						<ul className="mt-4 space-y-2.5 border-t border-border pt-4">
 							{s.books.filter((b) => b.total > 0).map((b) => (
-								<li key={b.id} className="grid grid-cols-[minmax(0,1fr)_1fr_90px] items-center gap-3 text-[13px]">
+								<li key={b.id} className="grid grid-cols-[minmax(0,1fr)_1fr_90px] items-center gap-3 text-[16px]">
 									<span className="truncate">{b.title}</span>
 									<Bar pct={b.status === 'Terminado' ? 1 : read(b.id) / b.total} tone={b.status === 'Terminado' ? 'ok' : 'blue'} />
 									<span className="text-right text-muted-foreground tabular-nums">{Math.min(read(b.id), b.total)}/{b.total}</span>

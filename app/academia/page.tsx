@@ -1,19 +1,18 @@
 'use client'
 
-import { HEAT, PageHeader, Panel, Ready, Stat } from '@/components/bits'
+import { Bars, HEAT, PageHeader, Panel, Ready, Stat } from '@/components/bits'
 import { Sheet, type Col } from '@/components/sheet'
 import { addDays, fmtShort, inRange, lastDays, today, weekStart } from '@/lib/dates'
+import { lastWeeks } from '@/lib/periods'
 import { addItem, removeItem, updateItem, useApp } from '@/lib/store'
 import type { Workout } from '@/lib/types'
 
-const GROUPS = ['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços', 'Core', 'Cardio', 'Full body'].map((g) => ({ value: g, label: g }))
-
-const COLS: Col<Workout>[] = [
-	{ key: 'date', label: 'Data', type: 'date', w: '140px' },
-	{ key: 'group', label: 'Treino', type: 'select', w: '130px', options: GROUPS },
+const cols = (groups: string[]): Col<Workout>[] => [
+	{ key: 'date', label: 'Data', type: 'date', w: '150px' },
+	{ key: 'group', label: 'Treino', type: 'select', w: '140px', options: groups.map((g) => ({ value: g, label: g })) },
 	{ key: 'minutes', label: 'Minutos', type: 'number', w: '90px', placeholder: '60' },
 	{ key: 'notes', label: 'Exercícios / cargas', type: 'text', w: 'minmax(220px,1fr)', placeholder: 'Ex.: Supino 4x8 60kg' },
-	{ key: 'weight', label: 'Peso (kg)', type: 'number', w: '100px', placeholder: 'opcional' },
+	{ key: 'weight', label: 'Peso (kg)', type: 'number', w: '110px', placeholder: 'opcional' },
 ]
 
 function Gym() {
@@ -27,6 +26,12 @@ function Gym() {
 	const mins = s.workouts.filter((w) => w.date >= days[0]).reduce((n, w) => n + w.minutes, 0)
 	const weights = rows.filter((w) => w.weight > 0)
 
+	const weeks = lastWeeks(8).map((w) => ({
+		label: fmtShort(w),
+		v: s.workouts.filter((x) => inRange(x.date, { from: w, to: addDays(w, 6) })).length,
+	}))
+	const weighIns = [...weights].reverse().slice(-10).map((w) => ({ label: fmtShort(w.date), v: w.weight }))
+
 	return (
 		<>
 			<PageHeader title="Academia" hint="Registre cada treino. A meta semanal conta daqui." />
@@ -38,25 +43,38 @@ function Gym() {
 						<Stat label="Minutos em 30 dias" value={mins} />
 						<Stat label="Peso atual" value={weights[0] ? `${weights[0].weight} kg` : '—'} />
 					</div>
-					<div className="grid grid-cols-[repeat(10,minmax(0,1fr))] gap-1 sm:grid-cols-[repeat(15,minmax(0,1fr))] sm:gap-[5px] lg:grid-cols-[repeat(30,minmax(0,1fr))]">
+					<div className="grid grid-cols-[repeat(10,minmax(0,1fr))] gap-1 sm:grid-cols-[repeat(15,minmax(0,1fr))] lg:grid-cols-[repeat(30,minmax(0,1fr))]">
 						{days.map((d) => (
 							<span
 								key={d}
 								title={`${fmtShort(d)}${s.workouts.some((w) => w.date === d) ? ' · treinou' : ''}`}
-								className={`aspect-square rounded-[4px] ${s.workouts.some((w) => w.date === d) ? HEAT[4] : HEAT[0]}`}
+								className={`aspect-square ${s.workouts.some((w) => w.date === d) ? HEAT[4] : HEAT[0]}`}
 							/>
 						))}
 					</div>
 				</Panel>
+				<div className="grid gap-4 lg:grid-cols-2">
+					<Panel title="Treinos por semana" meta="últimas 8 semanas">
+						<Bars data={weeks} color="blue" height={96} />
+					</Panel>
+					<Panel title="Peso corporal" meta="últimas pesagens">
+						{weighIns.length > 1 ? (
+							<Bars data={weighIns} color="pink" height={96} baseline="min" format={(n) => `${n}`} />
+						) : (
+							<p className="py-6 text-center text-[16px] text-muted-foreground">Anote o peso em 2 treinos para ver a evolução.</p>
+						)}
+					</Panel>
+				</div>
 				<Panel title="Treinos">
 					<Sheet<Workout>
-						cols={COLS}
+						cols={cols(s.settings.workoutGroups)}
 						rows={rows}
-						blank={() => ({ date: today(), group: 'Peito', minutes: 0, notes: '', weight: 0 })}
+						blank={() => ({ date: today(), group: s.settings.workoutGroups[0] ?? 'Treino', minutes: 0, notes: '', weight: 0 })}
 						canAdd={(d) => d.date !== ''}
 						onAdd={(d) => addItem('workouts', d)}
 						onUpdate={(id, p) => updateItem('workouts', id, p)}
 						onRemove={(id) => removeItem('workouts', id)}
+						onDuplicate={(r) => addItem('workouts', { date: today(), group: r.group, minutes: r.minutes, notes: r.notes, weight: 0 })}
 						empty="Nenhum treino registrado ainda."
 					/>
 				</Panel>

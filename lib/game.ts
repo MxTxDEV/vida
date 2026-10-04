@@ -220,6 +220,46 @@ export const ACHIEVEMENTS: Achievement[] = [
 ]
 
 /* ------------------------------------------------------------------ *
+ * Daily missions
+ * ------------------------------------------------------------------ */
+
+export const QUESTS = [
+	{ id: 'diary', label: 'Anotar no diário' },
+	{ id: 'body', label: 'Treinar' },
+	{ id: 'read', label: 'Ler 10 páginas' },
+	{ id: 'work', label: 'Concluir uma tarefa' },
+	{ id: 'create', label: 'Postar conteúdo' },
+	{ id: 'money', label: 'Lançar uma finança' },
+] as const
+
+/** Missions needed in one day to earn the daily bonus. */
+export const QUEST_MIN = 3
+
+function questDays(s: AppState) {
+	const days = new Map<string, Set<string>>()
+	const add = (d: string, q: string) => {
+		if (!d) return
+		let set = days.get(d)
+		if (!set) days.set(d, (set = new Set()))
+		set.add(q)
+	}
+	s.logs.forEach((x) => add(x.date, 'diary'))
+	s.workouts.forEach((x) => add(x.date, 'body'))
+	const pages = new Map<string, number>()
+	s.readings.forEach((r) => pages.set(r.date, (pages.get(r.date) ?? 0) + r.pages))
+	pages.forEach((n, d) => n >= 10 && add(d, 'read'))
+	s.tasks.forEach((t) => t.done && add(t.doneAt, 'work'))
+	s.posts.forEach((p) => p.status === 'Postado' && add(p.date, 'create'))
+	s.txs.forEach((t) => add(t.date, 'money'))
+	return days
+}
+
+export function questsOn(s: AppState, date = today()) {
+	const done = questDays(s).get(date) ?? new Set<string>()
+	return QUESTS.map((q) => ({ ...q, done: done.has(q.id) }))
+}
+
+/* ------------------------------------------------------------------ *
  * XP and levels
  * ------------------------------------------------------------------ */
 
@@ -231,21 +271,34 @@ function perDayCapped(dates: string[], cap: number) {
 	return n
 }
 
-export function xpBreakdown(s: AppState) {
+/**
+ * XP earned, either for a whole lifetime (no range) or inside a range, such
+ * as the current month. Everything is derived from dated records, so a month
+ * resets by itself and lifetime XP never does.
+ */
+export function xpBreakdown(s: AppState, r?: Range) {
+	const ok = (d: string) => !r || inRange(d, r)
+	const x = s.settings.xp
+	const pages = s.readings.filter((p) => ok(p.date)).reduce((n, p) => n + p.pages, 0)
+	let questDaysDone = 0
+	questDays(s).forEach((set, d) => {
+		if (ok(d) && set.size >= QUEST_MIN) questDaysDone++
+	})
 	const rows = [
-		{ label: 'Diário (até 3/dia)', xp: perDayCapped(s.logs.map((l) => l.date), 3) * 5 },
-		{ label: 'Lançamentos (até 3/dia)', xp: perDayCapped(s.txs.map((t) => t.date), 3) * 3 },
-		{ label: 'Treinos', xp: s.workouts.length * 30 },
-		{ label: 'Leitura (10 págs = 1 XP)', xp: Math.floor(totalPages(s) / 10) },
-		{ label: 'Tarefas concluídas', xp: doneTasks(s) * 15 },
-		{ label: 'Conteúdos postados', xp: postedCount(s) * 40 },
-		{ label: 'Metas (ganhos e perdas)', xp: s.settlements.reduce((n, x) => n + x.xp, 0) },
+		{ label: 'Diário (até 3/dia)', xp: perDayCapped(s.logs.filter((l) => ok(l.date)).map((l) => l.date), 3) * x.diary },
+		{ label: 'Lançamentos (até 3/dia)', xp: perDayCapped(s.txs.filter((t) => ok(t.date)).map((t) => t.date), 3) * x.tx },
+		{ label: 'Treinos', xp: s.workouts.filter((w) => ok(w.date)).length * x.workout },
+		{ label: 'Leitura', xp: x.pagesPerXp > 0 ? Math.floor(pages / x.pagesPerXp) : 0 },
+		{ label: 'Tarefas concluídas', xp: s.tasks.filter((t) => t.done && ok(t.doneAt)).length * x.task },
+		{ label: 'Conteúdos postados', xp: s.posts.filter((p) => p.status === 'Postado' && ok(p.date)).length * x.post },
+		{ label: 'Bônus de missões do dia', xp: questDaysDone * x.quest },
+		{ label: 'Metas (ganhos e perdas)', xp: s.settlements.filter((y) => ok(y.date)).reduce((n, y) => n + y.xp, 0) },
 		{
 			label: 'Conquistas',
-			xp: ACHIEVEMENTS.filter((a) => s.unlocked[a.id]).reduce((n, a) => n + a.xp, 0),
+			xp: ACHIEVEMENTS.filter((a) => s.unlocked[a.id] && ok(s.unlocked[a.id])).reduce((n, a) => n + a.xp, 0),
 		},
 	]
-	return { rows, total: Math.max(0, rows.reduce((n, r) => n + r.xp, 0)) }
+	return { rows, total: Math.max(0, rows.reduce((n, r2) => n + r2.xp, 0)) }
 }
 
 export const LEVEL_TITLES = [
@@ -258,6 +311,7 @@ export const LEVEL_TITLES = [
 	'Lenda',
 ]
 
+/** Lifetime level. It only ever goes up. */
 export function levelInfo(xp: number) {
 	const level = Math.floor(Math.sqrt(xp / 100)) + 1
 	const floor = 100 * (level - 1) ** 2
@@ -269,6 +323,67 @@ export function levelInfo(xp: number) {
 		span: ceil - floor,
 		pct: (xp - floor) / (ceil - floor),
 	}
+}
+
+/* ------------------------------------------------------------------ *
+ * Monthly ranking ("season"): resets every month
+ * ------------------------------------------------------------------ */
+
+export const RANKS = [
+	{ id: 'bronze', label: 'Bronze' },
+	{ id: 'prata', label: 'Prata' },
+	{ id: 'ouro', label: 'Ouro' },
+	{ id: 'platina', label: 'Platina' },
+	{ id: 'diamante', label: 'Diamante' },
+] as const
+
+export function rankFor(xp: number, tiers: number[]) {
+	const floors = [0, ...tiers]
+	let index = 0
+	floors.forEach((f, k) => {
+		if (xp >= f) index = k
+	})
+	const nextAt = floors[index + 1]
+	return {
+		index,
+		rank: RANKS[index],
+		next: nextAt === undefined ? null : { rank: RANKS[index + 1], at: nextAt },
+		pct: nextAt === undefined ? 1 : (xp - floors[index]) / (nextAt - floors[index]),
+	}
+}
+
+export const seasonRange = (now = today()): Range => ({
+	from: monthStart(now),
+	to: monthEnd(now),
+})
+
+export function earliestDate(s: AppState): string | null {
+	const dates = [
+		...s.logs.map((x) => x.date),
+		...s.txs.map((x) => x.date),
+		...s.workouts.map((x) => x.date),
+		...s.readings.map((x) => x.date),
+		...s.posts.map((x) => x.date),
+		...s.tasks.map((x) => x.doneAt),
+		...s.settlements.map((x) => x.date),
+		...Object.values(s.unlocked),
+	].filter(Boolean)
+	return dates.length ? dates.sort()[0] : null
+}
+
+/** Final XP and rank of every finished month, newest first. */
+export function seasonHistory(s: AppState, now = today()) {
+	const first = earliestDate(s)
+	if (!first) return []
+	const out: { month: string; xp: number; rank: ReturnType<typeof rankFor> }[] = []
+	const current = monthStart(now)
+	let m = monthStart(first)
+	for (let i = 0; m < current && i < 60; i++) {
+		const xp = xpBreakdown(s, { from: m, to: monthEnd(m) }).total
+		out.push({ month: m, xp, rank: rankFor(xp, s.settings.tiers) })
+		m = addMonths(m, 1)
+	}
+	return out.reverse()
 }
 
 /* ------------------------------------------------------------------ *

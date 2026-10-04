@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { uid, today } from './dates'
 import { defaultGoals } from './game'
+import { defaultSettings, mergeSettings } from './settings'
 import type { AppState, CollKey } from './types'
 
 const KEY = 'vida:v1'
@@ -20,6 +21,7 @@ const blank = (): AppState => ({
 	settlements: [],
 	unlocked: {},
 	layout: [],
+	settings: defaultSettings(),
 })
 
 /** What the server (and the first client render) sees. */
@@ -37,8 +39,10 @@ function merge(raw: unknown): AppState {
 	const next = { ...base, ready: true } as AppState
 	for (const k of Object.keys(base) as (keyof AppState)[]) {
 		if (k === 'ready' || saved[k] === undefined) continue
-		if (typeof saved[k] === typeof base[k]) (next as unknown as Record<string, unknown>)[k] = saved[k]
+		if (k !== 'settings' && typeof saved[k] === typeof base[k])
+			(next as unknown as Record<string, unknown>)[k] = saved[k]
 	}
+	next.settings = mergeSettings(saved.settings)
 	return next
 }
 

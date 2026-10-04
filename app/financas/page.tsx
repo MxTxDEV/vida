@@ -1,19 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { Bar, PageHeader, Panel, Ready, Stat, brl, field } from '@/components/bits'
+import { Bar, Bars, PageHeader, Panel, Ready, Stat, brl, field } from '@/components/bits'
 import { Sheet, type Col } from '@/components/sheet'
 import { monthEnd, today } from '@/lib/dates'
+import { lastMonths, monthLabel } from '@/lib/periods'
 import { addItem, removeItem, updateItem, useApp } from '@/lib/store'
 import type { Tx } from '@/lib/types'
 
-const CATS = ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Estudos', 'Assinaturas', 'Compras', 'Investimento', 'Salário', 'Freelas', 'Outros']
-const opt = CATS.map((c) => ({ value: c, label: c }))
-
-const COLS: Col<Tx>[] = [
-	{ key: 'date', label: 'Data', type: 'date', w: '140px' },
-	{ key: 'type', label: 'Tipo', type: 'select', w: '110px', options: [{ value: 'gasto', label: 'Gasto' }, { value: 'receita', label: 'Receita' }] },
-	{ key: 'category', label: 'Categoria', type: 'select', w: '140px', options: opt },
+const cols = (cats: string[]): Col<Tx>[] => [
+	{ key: 'date', label: 'Data', type: 'date', w: '150px' },
+	{ key: 'type', label: 'Tipo', type: 'select', w: '120px', options: [{ value: 'gasto', label: 'Gasto' }, { value: 'receita', label: 'Receita' }] },
+	{ key: 'category', label: 'Categoria', type: 'select', w: '150px', options: cats.map((c) => ({ value: c, label: c })) },
 	{ key: 'desc', label: 'Descrição', type: 'text', w: 'minmax(160px,1fr)', placeholder: 'Ex.: Mercado' },
 	{ key: 'amount', label: 'Valor (R$)', type: 'number', w: '120px', placeholder: '0,00' },
 ]
@@ -33,6 +31,15 @@ function Finance() {
 	const cats = [...byCat.entries()].sort((a, b) => b[1] - a[1])
 	const budget = s.goals.find((g) => g.active && g.metric === 'expenses')
 
+	const months = lastMonths(6).map((m) => {
+		const t = s.txs.filter((x) => x.date.startsWith(m.slice(0, 7)))
+		return {
+			label: monthLabel(m),
+			v: t.filter((x) => x.type === 'receita').reduce((n, x) => n + x.amount, 0),
+			v2: t.filter((x) => x.type === 'gasto').reduce((n, x) => n + x.amount, 0),
+		}
+	})
+
 	return (
 		<>
 			<PageHeader title="Finanças" hint="Sua planilha: clique em qualquer célula para editar.">
@@ -41,7 +48,7 @@ function Finance() {
 					value={month}
 					onChange={(e) => e.target.value && setMonth(e.target.value)}
 					aria-label="Mês"
-					className={`${field} [color-scheme:light] dark:[color-scheme:dark]`}
+					className={field}
 				/>
 			</PageHeader>
 			<div className="grid gap-4">
@@ -61,11 +68,17 @@ function Finance() {
 						</div>
 					)}
 				</Panel>
+				<Panel title="Evolução: receitas × gastos" meta="últimos 6 meses">
+					<Bars data={months} color="ok" color2="err" format={brl} />
+					<p className="mt-3 text-[14px] text-muted-foreground">
+						<span className="text-px-green">■</span> receitas &nbsp; <span className="text-px-red">■</span> gastos
+					</p>
+				</Panel>
 				{cats.length > 0 && (
 					<Panel title="Gastos por categoria">
 						<ul className="space-y-2.5">
 							{cats.map(([c, v]) => (
-								<li key={c} className="grid grid-cols-[110px_1fr_100px] items-center gap-3 text-[13px]">
+								<li key={c} className="grid grid-cols-[110px_1fr_110px] items-center gap-3 text-[16px]">
 									<span className="truncate">{c}</span>
 									<Bar pct={v / cats[0][1]} />
 									<span className="text-right text-muted-foreground tabular-nums">{brl(v)}</span>
@@ -76,13 +89,14 @@ function Finance() {
 				)}
 				<Panel title="Lançamentos">
 					<Sheet<Tx>
-						cols={COLS}
+						cols={cols(s.settings.financeCategories)}
 						rows={rows}
-						blank={() => ({ date: today(), type: 'gasto', category: 'Alimentação', desc: '', amount: 0 })}
+						blank={() => ({ date: today(), type: 'gasto', category: s.settings.financeCategories[0] ?? 'Outros', desc: '', amount: 0 })}
 						canAdd={(d) => Number(d.amount) > 0 && d.date !== ''}
 						onAdd={(d) => addItem('txs', d)}
 						onUpdate={(id, p) => updateItem('txs', id, p)}
 						onRemove={(id) => removeItem('txs', id)}
+						onDuplicate={(r) => addItem('txs', { date: today(), type: r.type, category: r.category, desc: r.desc, amount: r.amount })}
 						empty="Nenhum lançamento neste mês."
 					/>
 				</Panel>

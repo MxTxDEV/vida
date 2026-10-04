@@ -6,14 +6,13 @@ import { addDays, inRange, monthEnd, monthStart, today, weekStart } from '@/lib/
 import { addItem, removeItem, updateItem, useApp } from '@/lib/store'
 import type { Post } from '@/lib/types'
 
-const PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'X / Twitter', 'LinkedIn', 'Blog', 'Outro'].map((v) => ({ value: v, label: v }))
 const STATUS = ['Ideia', 'Produzindo', 'Postado'].map((v) => ({ value: v, label: v }))
 
-const COLS: Col<Post>[] = [
-	{ key: 'date', label: 'Data', type: 'date', w: '140px' },
-	{ key: 'platform', label: 'Plataforma', type: 'select', w: '140px', options: PLATFORMS },
+const cols = (platforms: string[]): Col<Post>[] => [
+	{ key: 'date', label: 'Data', type: 'date', w: '150px' },
+	{ key: 'platform', label: 'Plataforma', type: 'select', w: '150px', options: platforms.map((v) => ({ value: v, label: v })) },
 	{ key: 'title', label: 'Título / ideia', type: 'text', w: 'minmax(220px,1fr)', placeholder: 'Sobre o que é' },
-	{ key: 'status', label: 'Status', type: 'select', w: '130px', options: STATUS },
+	{ key: 'status', label: 'Status', type: 'select', w: '140px', options: STATUS },
 ]
 
 function Content() {
@@ -39,13 +38,14 @@ function Content() {
 				</Panel>
 				<Panel title="Pipeline de conteúdo">
 					<Sheet<Post>
-						cols={COLS}
+						cols={cols(s.settings.platforms)}
 						rows={rows}
-						blank={() => ({ date: today(), platform: 'Instagram', title: '', status: 'Ideia' })}
+						blank={() => ({ date: today(), platform: s.settings.platforms[0] ?? 'Outro', title: '', status: 'Ideia' })}
 						canAdd={(d) => d.title.trim() !== '' && d.date !== ''}
 						onAdd={(d) => addItem('posts', { ...d, title: d.title.trim() })}
 						onUpdate={(id, p) => updateItem('posts', id, p)}
 						onRemove={(id) => removeItem('posts', id)}
+						onDuplicate={(r) => addItem('posts', { date: today(), platform: r.platform, title: r.title, status: 'Ideia' })}
 						empty="Anote sua primeira ideia de conteúdo."
 					/>
 				</Panel>

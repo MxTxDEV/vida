@@ -2,10 +2,9 @@
 
 import Link from 'next/link'
 import { useState, type ReactNode } from 'react'
-import DraggableWidgetGrid, {
-	type WidgetItem,
-} from '@/components/ui/draggable-widget-grid'
-import { Bar, HEAT, Ready, brl, button, buttonPrimary, field, heatLevel, num } from './bits'
+import DraggableWidgetGrid from '@/components/ui/draggable-widget-grid'
+import { Bar, HEAT, Ready, brl, heatLevel, num, TONE_TEXT } from './bits'
+import { Hero, PixelIcon, RankBadge } from './pixel'
 import {
 	addDays,
 	fmtShort,
@@ -18,21 +17,20 @@ import {
 	weekStart,
 	type Range,
 } from '@/lib/dates'
-import { goalProgress, levelInfo, METRICS, diaryStreak, xpBreakdown } from '@/lib/game'
+import {
+	diaryStreak,
+	goalProgress,
+	levelInfo,
+	METRICS,
+	QUEST_MIN,
+	questsOn,
+	rankFor,
+	seasonRange,
+	xpBreakdown,
+} from '@/lib/game'
 import { addItem, mutate, useApp } from '@/lib/store'
 import { AREAS, type AppState, type Area } from '@/lib/types'
-
-const DEFAULT: WidgetItem[] = [
-	{ id: 'nivel', size: 'wide', label: 'Nível e XP' },
-	{ id: 'dias', size: 'wide', label: 'Últimos 30 dias' },
-	{ id: 'metas', size: 'lg', label: 'Metas do período' },
-	{ id: 'financas', size: 'wide', label: 'Finanças do mês' },
-	{ id: 'academia', size: 'sm', label: 'Academia' },
-	{ id: 'leitura', size: 'sm', label: 'Leitura' },
-	{ id: 'projetos', size: 'sm', label: 'Projetos' },
-	{ id: 'conteudo', size: 'sm', label: 'Conteúdo' },
-	{ id: 'premios', size: 'wide', label: 'Recompensas e penalidades' },
-]
+import { WIDGETS } from '@/lib/widgets'
 
 function Tile({
 	title,
@@ -46,15 +44,11 @@ function Tile({
 	children: ReactNode
 }) {
 	return (
-		<section className="@container flex h-full flex-col gap-3 p-4 sm:p-[20px]">
-			<header className="flex items-center justify-between gap-3 leading-none">
-				<h3 className="truncate text-[12px] tracking-[0.1em] text-muted-foreground uppercase">
-					{title}
-				</h3>
-				<Link
-					href={href}
-					className="shrink-0 text-[12px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-					{meta ?? 'abrir →'}
+		<section className="@container flex h-full flex-col gap-3 p-3 sm:p-4">
+			<header className="flex items-center justify-between gap-2 leading-none">
+				<h3 className="px-label truncate !text-[9px]">{title}</h3>
+				<Link href={href} className="shrink-0 text-[15px] text-muted-foreground hover:text-primary">
+					{meta ?? '▶'}
 				</Link>
 			</header>
 			<div className="flex min-h-0 flex-1 flex-col">{children}</div>
@@ -63,14 +57,14 @@ function Tile({
 }
 
 const Big = ({ children, unit }: { children: ReactNode; unit?: string }) => (
-	<p className="text-[28px] leading-none tracking-tight tabular-nums @[240px]:text-[30px]">
+	<p className="text-[32px] leading-none tabular-nums">
 		{children}
-		{unit && <span className="text-[13px] text-muted-foreground">{' '}{unit}</span>}
+		{unit && <span className="text-[16px] text-muted-foreground">{' '}{unit}</span>}
 	</p>
 )
 
 const Line = ({ label, value }: { label: ReactNode; value: ReactNode }) => (
-	<div className="flex items-center gap-2 text-[13px]">
+	<div className="flex items-center gap-2 text-[16px]">
 		<span className="min-w-0 truncate">{label}</span>
 		<span className="ml-auto text-muted-foreground tabular-nums">{value}</span>
 	</div>
@@ -94,18 +88,79 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 	const month: Range = { from: monthStart(now), to: monthEnd(now) }
 
 	switch (kind) {
-		case 'nivel': {
-			const { total } = xpBreakdown(s)
-			const lv = levelInfo(total)
-			const streak = diaryStreak(s, now)
+		case 'rank': {
+			const xp = xpBreakdown(s, seasonRange(now)).total
+			const r = rankFor(xp, s.settings.tiers)
+			const left = Math.max(0, Math.round((new Date(month.to).getTime() - new Date(now).getTime()) / 86400000))
 			return (
-				<Tile title="Nível" href="/metas" meta="conquistas →">
-					<Big unit={lv.title}>Nv {lv.level}</Big>
-					<div className="mt-auto space-y-2">
-						<Bar pct={lv.pct} />
-						<Line label={`${lv.into} / ${lv.span} XP para o próximo nível`} value={`${total} XP`} />
-						<Line label="Sequência no diário" value={`${streak.current} dia${streak.current === 1 ? '' : 's'} 🔥`} />
+				<Tile title="Ranking do mês" href="/metas" meta="temporada ▶">
+					<div className="flex items-center gap-4">
+						<RankBadge index={r.index} size={4} />
+						<div className="min-w-0">
+							<p className="font-display text-[14px] text-primary">{r.rank.label.toUpperCase()}</p>
+							<p className="mt-1 text-[26px] leading-none tabular-nums">{num(xp)} XP</p>
+						</div>
 					</div>
+					<div className="mt-auto space-y-1.5">
+						<Bar pct={r.pct} tone="warn" />
+						<Line
+							label={r.next ? `Faltam ${num(r.next.at - xp)} XP p/ ${r.next.rank.label}` : 'Rank máximo!'}
+							value={`${left}d p/ virar`}
+						/>
+					</div>
+				</Tile>
+			)
+		}
+		case 'nivel': {
+			const lv = levelInfo(xpBreakdown(s).total)
+			return (
+				<Tile title="Nível" href="/metas">
+					<div className="flex items-end gap-3">
+						<Hero size={4} />
+						<div className="min-w-0">
+							<p className="font-display text-[14px]">Nv {lv.level}</p>
+							<p className="truncate text-[15px] text-muted-foreground">{lv.title}</p>
+						</div>
+					</div>
+					<div className="mt-auto space-y-1">
+						<Bar pct={lv.pct} tone="blue" />
+						<p className="text-[14px] text-muted-foreground tabular-nums">{lv.into}/{lv.span} XP</p>
+					</div>
+				</Tile>
+			)
+		}
+		case 'streak': {
+			const st = diaryStreak(s, now)
+			return (
+				<Tile title="Sequência" href="/diario">
+					<div className="flex items-center gap-3 text-px-red">
+						<PixelIcon name="fogo" size={5} />
+						<span className="text-[40px] leading-none text-foreground tabular-nums">{st.current}</span>
+					</div>
+					<p className="mt-auto text-[15px] text-muted-foreground">
+						dias seguidos · melhor {st.best}
+					</p>
+				</Tile>
+			)
+		}
+		case 'missoes': {
+			const q = questsOn(s, now)
+			const done = q.filter((x) => x.done).length
+			return (
+				<Tile title="Missões do dia" href="/metas" meta={`${done}/${q.length}`}>
+					<ul className="grid flex-1 grid-cols-2 content-start gap-x-4 gap-y-1.5">
+						{q.map((x) => (
+							<li key={x.id} className="flex items-center gap-2 text-[16px]">
+								<span className={`inline-flex size-5 shrink-0 items-center justify-center border-4 border-border ${x.done ? 'bg-px-green text-background' : ''}`}>
+									{x.done && <PixelIcon name="check" size={1} />}
+								</span>
+								<span className={`truncate ${x.done ? 'text-muted-foreground line-through' : ''}`}>{x.label}</span>
+							</li>
+						))}
+					</ul>
+					<p className={`text-[15px] ${done >= QUEST_MIN ? 'text-px-green' : 'text-muted-foreground'}`}>
+						{done >= QUEST_MIN ? `★ Bônus de +${s.settings.xp.quest} XP garantido!` : `Faça ${QUEST_MIN} para ganhar +${s.settings.xp.quest} XP`}
+					</p>
 				</Tile>
 			)
 		}
@@ -126,11 +181,11 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 								<span
 									key={d}
 									title={`${fmtShort(d)} · ${by.get(d) ?? 0} registros`}
-									className={`h-3.5 rounded-[3px] ${d === now ? 'ring-1 ring-foreground/50' : ''} ${HEAT[heatLevel(by.get(d) ?? 0)]}`}
+									className={`h-3.5 ${d === now ? 'outline-2 outline-foreground' : ''} ${HEAT[heatLevel(by.get(d) ?? 0)]}`}
 								/>
 							))}
 						</div>
-						<p className="truncate text-[13px] text-muted-foreground">
+						<p className="truncate text-[15px] text-muted-foreground">
 							{last ? `${fmtShort(last.date)} ${last.time} · ${last.text}` : 'Nenhuma anotação ainda.'}
 						</p>
 					</div>
@@ -141,26 +196,17 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 			const goals = s.goals.filter((g) => g.active).slice(0, 7)
 			return (
 				<Tile title="Metas" href="/metas">
-					{goals.length === 0 && (
-						<p className="text-[13px] text-muted-foreground">Nenhuma meta ativa.</p>
-					)}
+					{goals.length === 0 && <p className="text-[16px] text-muted-foreground">Nenhuma meta ativa.</p>}
 					<ul className="flex flex-1 flex-col justify-between gap-2">
 						{goals.map((g) => {
 							const p = goalProgress(g, s, now)
-							const bad = g.dir === 'max' && !p.met
+							const over = g.dir === 'max' && !p.met
 							return (
 								<li key={g.id} className="space-y-1">
-									<Line
-										label={g.title}
-										value={
-											METRICS[g.metric].money
-												? `${brl(p.value)}`
-												: `${num(p.value)}/${num(g.target)}`
-										}
-									/>
+									<Line label={g.title} value={METRICS[g.metric].money ? brl(p.value) : `${num(p.value)}/${num(g.target)}`} />
 									<Bar
 										pct={g.dir === 'max' ? (g.target ? p.value / g.target : 0) : p.pct}
-										tone={bad ? 'err' : p.settled ? 'ok' : p.met ? 'ok' : g.dir === 'max' && p.value / g.target > 0.8 ? 'warn' : 'blue'}
+										tone={over ? 'err' : p.met ? 'ok' : g.dir === 'max' && p.value / g.target > 0.8 ? 'warn' : 'blue'}
 									/>
 								</li>
 							)
@@ -172,12 +218,11 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 		case 'financas': {
 			const inc = s.txs.filter((t) => t.type === 'receita' && inRange(t.date, month)).reduce((n, t) => n + t.amount, 0)
 			const out = s.txs.filter((t) => t.type === 'gasto' && inRange(t.date, month)).reduce((n, t) => n + t.amount, 0)
-			const bal = inc - out
 			const budget = s.goals.find((g) => g.active && g.metric === 'expenses')
 			return (
 				<Tile title="Finanças do mês" href="/financas">
-					<Big>{brl(bal)}</Big>
-					<div className="mt-auto space-y-2">
+					<p className={`text-[32px] leading-none tabular-nums ${inc - out < 0 ? TONE_TEXT.err : ''}`}>{brl(inc - out)}</p>
+					<div className="mt-auto space-y-1.5">
 						<Line label="Receitas" value={brl(inc)} />
 						<Line label="Gastos" value={brl(out)} />
 						{budget && <Bar pct={out / budget.target} tone={out > budget.target ? 'err' : out / budget.target > 0.8 ? 'warn' : 'blue'} />}
@@ -189,15 +234,11 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 			const n = s.workouts.filter((w) => inRange(w.date, week)).length
 			const goal = s.goals.find((g) => g.active && g.metric === 'workouts')
 			return (
-				<Tile title="Academia" href="/academia" meta="→">
+				<Tile title="Academia" href="/academia">
 					<Big unit={goal ? `/ ${goal.target}` : 'na semana'}>{n}</Big>
 					<div className="mt-auto flex gap-[3px]">
 						{Array.from({ length: 7 }, (_, i) => addDays(week.from, i)).map((d) => (
-							<span
-								key={d}
-								title={fmtShort(d)}
-								className={`h-5 flex-1 rounded-[3px] ${s.workouts.some((w) => w.date === d) ? 'bg-blue-500 dark:bg-blue-400' : 'bg-foreground/10'}`}
-							/>
+							<span key={d} title={fmtShort(d)} className={`h-5 flex-1 ${s.workouts.some((w) => w.date === d) ? 'bg-px-blue' : 'bg-foreground/10'}`} />
 						))}
 					</div>
 				</Tile>
@@ -207,11 +248,9 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 			const pages = s.readings.filter((r) => inRange(r.date, week)).reduce((n, r) => n + r.pages, 0)
 			const book = s.books.find((b) => b.status === 'Lendo')
 			return (
-				<Tile title="Leitura" href="/leitura" meta="→">
+				<Tile title="Leitura" href="/leitura">
 					<Big unit="págs">{num(pages)}</Big>
-					<p className="mt-auto truncate text-[13px] text-muted-foreground">
-						{book ? `Lendo: ${book.title}` : 'esta semana'}
-					</p>
+					<p className="mt-auto truncate text-[15px] text-muted-foreground">{book ? `Lendo: ${book.title}` : 'esta semana'}</p>
 				</Tile>
 			)
 		}
@@ -219,11 +258,9 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 			const done = s.tasks.filter((t) => t.done && t.doneAt && inRange(t.doneAt, week)).length
 			const active = s.projects.filter((p) => p.status === 'Ativo').length
 			return (
-				<Tile title="Projetos" href="/projetos" meta="→">
+				<Tile title="Projetos" href="/projetos">
 					<Big unit="tarefas">{done}</Big>
-					<p className="mt-auto text-[13px] text-muted-foreground">
-						{active} projeto{active === 1 ? '' : 's'} ativo{active === 1 ? '' : 's'}
-					</p>
+					<p className="mt-auto text-[15px] text-muted-foreground">{active} ativo{active === 1 ? '' : 's'}</p>
 				</Tile>
 			)
 		}
@@ -231,34 +268,29 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 			const posted = s.posts.filter((p) => p.status === 'Postado' && inRange(p.date, week)).length
 			const ideas = s.posts.filter((p) => p.status === 'Ideia').length
 			return (
-				<Tile title="Conteúdo" href="/conteudo" meta="→">
+				<Tile title="Conteúdo" href="/conteudo">
 					<Big unit="posts">{posted}</Big>
-					<p className="mt-auto text-[13px] text-muted-foreground">
-						{ideas} ideia{ideas === 1 ? '' : 's'} na fila
-					</p>
+					<p className="mt-auto text-[15px] text-muted-foreground">{ideas} ideia{ideas === 1 ? '' : 's'} na fila</p>
 				</Tile>
 			)
 		}
 		case 'premios': {
 			const rewards = s.settlements.filter((x) => x.result === 'won' && !x.resolved)
 			const penalties = s.settlements.filter((x) => x.result === 'lost' && !x.resolved)
+			const rows = [...penalties.map((x) => ({ x, tag: '⚠' })), ...rewards.map((x) => ({ x, tag: '★' }))].slice(0, 3)
 			return (
 				<Tile title="Prêmios e penalidades" href="/metas">
 					<div className="flex gap-6">
 						<Big unit="prêmios">{rewards.length}</Big>
 						<Big unit="a pagar">{penalties.length}</Big>
 					</div>
-					<ul className="mt-auto space-y-1.5">
-						{[...penalties.map((x) => ({ x, tag: '⚠️' })), ...rewards.map((x) => ({ x, tag: '🎁' }))]
-							.slice(0, 3)
-							.map(({ x, tag }) => (
-								<li key={x.id} className="truncate text-[13px]">
-									{tag} {x.text || x.goalTitle}
-								</li>
-							))}
-						{rewards.length + penalties.length === 0 && (
-							<li className="text-[13px] text-muted-foreground">Cumpra metas para ganhar prêmios.</li>
-						)}
+					<ul className="mt-auto space-y-1">
+						{rows.map(({ x, tag }) => (
+							<li key={x.id} className="truncate text-[16px]">
+								<span className={tag === '★' ? 'text-px-yellow' : 'text-px-red'}>{tag}</span> {x.text || x.goalTitle}
+							</li>
+						))}
+						{rows.length === 0 && <li className="text-[16px] text-muted-foreground">Cumpra metas para ganhar prêmios.</li>}
 					</ul>
 				</Tile>
 			)
@@ -282,60 +314,100 @@ function QuickLog() {
 				e.preventDefault()
 				submit()
 			}}
-			className="mb-4 flex flex-wrap gap-2">
+			className="mb-3 flex flex-wrap gap-2">
 			<input
 				value={text}
 				onChange={(e) => setText(e.target.value)}
 				placeholder="O que você fez agora? (Enter para anotar)"
 				aria-label="O que você fez agora"
-				className={`${field} h-10 min-w-[220px] flex-1 text-[14px]`}
+				className="px-input h-11 min-w-[220px] flex-1 text-[18px]"
 			/>
-			<select
-				value={area}
-				onChange={(e) => setArea(e.target.value as Area)}
-				aria-label="Área"
-				className={`${field} h-10 bg-card`}>
+			<select value={area} onChange={(e) => setArea(e.target.value as Area)} aria-label="Área" className="px-input h-11">
 				{AREAS.map((a) => (
 					<option key={a.value} value={a.value}>
 						{a.label}
 					</option>
 				))}
 			</select>
-			<button type="submit" className={`${buttonPrimary} h-10`}>
+			<button type="submit" className="px-btn-primary h-11">
 				Anotar
 			</button>
 		</form>
 	)
 }
 
+/** One-tap buttons for the things you log most. */
+function QuickActions({ s }: { s: AppState }) {
+	const ask = (msg: string, def = '') => window.prompt(msg, def)
+	const book = s.books.find((b) => b.status === 'Lendo')
+	return (
+		<div className="mb-4 flex flex-wrap gap-2">
+			<button
+				className="px-btn"
+				onClick={() => {
+					const m = Number(ask('Quantos minutos de treino?', '60'))
+					if (m > 0) addItem('workouts', { date: today(), group: s.settings.workoutGroups[0] ?? 'Treino', minutes: m, notes: '', weight: 0 })
+				}}>
+				<PixelIcon name="academia" /> Treinei
+			</button>
+			<button
+				className="px-btn"
+				onClick={() => {
+					if (!book) return window.alert('Marque um livro como "Lendo" na aba Leitura primeiro.')
+					const p = Number(ask(`Páginas lidas de "${book.title}"?`, '10'))
+					if (p > 0) addItem('readings', { date: today(), bookId: book.id, pages: p })
+				}}>
+				<PixelIcon name="leitura" /> Li páginas
+			</button>
+			<button
+				className="px-btn"
+				onClick={() => {
+					const v = Number((ask('Valor do gasto (R$)?') ?? '').replace(',', '.'))
+					if (v > 0) addItem('txs', { date: today(), type: 'gasto', category: s.settings.financeCategories[0] ?? 'Outros', desc: ask('Descrição?') ?? '', amount: v })
+				}}>
+				<PixelIcon name="financas" /> Gasto
+			</button>
+			<button
+				className="px-btn"
+				onClick={() => {
+					const t = ask('Título do conteúdo postado?')
+					if (t?.trim()) addItem('posts', { date: today(), platform: s.settings.platforms[0] ?? 'Outro', title: t.trim(), status: 'Postado' })
+				}}>
+				<PixelIcon name="conteudo" /> Postei
+			</button>
+		</div>
+	)
+}
+
 function Board() {
 	const s = useApp()
 	const [editable, setEditable] = useState(false)
+	const hidden = s.settings.hiddenWidgets
 	// The grid keeps its own order after mount; start from the saved one.
-	const [items] = useState(() => {
-		const rank = (id: string) => {
-			const i = s.layout.indexOf(id)
-			return i < 0 ? 999 : i
-		}
-		return s.layout.length ? [...DEFAULT].sort((a, b) => rank(a.id) - rank(b.id)) : DEFAULT
+	const [order] = useState(() => s.layout)
+	const items = WIDGETS.filter((w) => !hidden.includes(w.id)).sort((a, b) => {
+		const rank = (id: string) => (order.indexOf(id) < 0 ? 999 : order.indexOf(id))
+		return order.length ? rank(a.id) - rank(b.id) : 0
 	})
 
 	return (
 		<>
 			<QuickLog />
+			<QuickActions s={s} />
 			<div className="mb-4 flex items-center justify-between gap-3">
-				<p className="text-[13px] text-muted-foreground">
-					{editable
-						? 'Arraste os blocos para reorganizar. Alt + setas no teclado.'
-						: 'Seu painel em tempo real. Clique em um bloco para abrir a seção.'}
+				<p className="text-[16px] text-muted-foreground">
+					{editable ? 'Arraste os blocos para reorganizar. Alt + setas no teclado.' : 'Clique no ▶ de um bloco para abrir a seção.'}
 				</p>
-				<button className={button} onClick={() => setEditable((v) => !v)}>
+				<button className={editable ? 'px-btn-primary' : 'px-btn'} onClick={() => setEditable((v) => !v)}>
 					{editable ? 'Concluir' : 'Reorganizar'}
 				</button>
 			</div>
 			<DraggableWidgetGrid
+				key={hidden.join(',')}
 				items={items}
 				editable={editable}
+				radius={0}
+				gap={14}
 				onChange={(next) => mutate((st) => ({ ...st, layout: next.map((i) => i.id) }))}
 				renderItem={(item) => <Widgets s={s} kind={item.id} />}
 			/>

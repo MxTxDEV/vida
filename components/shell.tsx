@@ -3,44 +3,35 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, type ReactNode } from 'react'
-import { button } from './bits'
 import { AccountMenu } from './account'
-import { initSync } from '@/lib/sync'
-import { levelInfo, syncGame, xpBreakdown } from '@/lib/game'
+import { PixelIcon, RankBadge } from './pixel'
+import { levelInfo, rankFor, seasonRange, syncGame, xpBreakdown } from '@/lib/game'
 import { exportData, importData, mutate, resetData, useApp } from '@/lib/store'
-
-/**
- * The palette from the original dashboard, so every page looks the same in
- * any host theme. Light by default, dark when the system asks for it.
- */
-const PALETTE = [
-	'[--background:#ffffff] [--color-background:#ffffff] [--foreground:#09090b] [--color-foreground:#09090b] [--card:#ffffff] [--color-card:#ffffff] [--card-foreground:#09090b] [--color-card-foreground:#09090b] [--muted-foreground:#71717a] [--color-muted-foreground:#71717a] [--border:#e4e4e7] [--color-border:#e4e4e7] [--ring:#18181b] [--color-ring:#18181b]',
-	'dark:[--background:#0a0a0b] dark:[--color-background:#0a0a0b] dark:[--foreground:#fafafa] dark:[--color-foreground:#fafafa] dark:[--card:#141417] dark:[--color-card:#141417] dark:[--card-foreground:#fafafa] dark:[--color-card-foreground:#fafafa] dark:[--muted-foreground:#a1a1aa] dark:[--color-muted-foreground:#a1a1aa] dark:[--border:#27272a] dark:[--color-border:#27272a] dark:[--ring:#d4d4d8] dark:[--color-ring:#d4d4d8]',
-].join(' ')
+import { initSync } from '@/lib/sync'
 
 const NAV = [
-	{ href: '/', label: 'Painel' },
-	{ href: '/diario', label: 'Diário' },
-	{ href: '/financas', label: 'Finanças' },
-	{ href: '/academia', label: 'Academia' },
-	{ href: '/leitura', label: 'Leitura' },
-	{ href: '/projetos', label: 'Projetos' },
-	{ href: '/conteudo', label: 'Conteúdo' },
-	{ href: '/metas', label: 'Metas' },
+	{ href: '/', label: 'Painel', icon: 'painel' },
+	{ href: '/diario', label: 'Diário', icon: 'diario' },
+	{ href: '/financas', label: 'Finanças', icon: 'financas' },
+	{ href: '/academia', label: 'Academia', icon: 'academia' },
+	{ href: '/leitura', label: 'Leitura', icon: 'leitura' },
+	{ href: '/projetos', label: 'Projetos', icon: 'projetos' },
+	{ href: '/conteudo', label: 'Conteúdo', icon: 'conteudo' },
+	{ href: '/metas', label: 'Metas', icon: 'metas' },
+	{ href: '/opcoes', label: 'Opções', icon: 'opcoes' },
 ]
 
 function DataMenu() {
 	const file = useRef<HTMLInputElement>(null)
+	const item = 'px-btn !justify-start !border-0 !min-h-9 w-full'
 	return (
 		<details className="relative">
-			<summary className={`${button} cursor-pointer list-none`}>Dados</summary>
-			<div className="absolute right-0 z-30 mt-2 flex w-52 flex-col gap-1 rounded-xl bg-card p-2 text-[13px] shadow-lg ring-1 ring-border">
+			<summary className="px-btn cursor-pointer list-none">Dados</summary>
+			<div className="px-box absolute right-0 z-30 mt-2 flex w-56 flex-col gap-1 p-2">
 				<button
-					className="rounded-md px-2 py-1.5 text-left hover:bg-foreground/5"
+					className={item}
 					onClick={() => {
-						const url = URL.createObjectURL(
-							new Blob([exportData()], { type: 'application/json' }),
-						)
+						const url = URL.createObjectURL(new Blob([exportData()], { type: 'application/json' }))
 						const a = document.createElement('a')
 						a.href = url
 						a.download = 'vida-backup.json'
@@ -49,16 +40,13 @@ function DataMenu() {
 					}}>
 					Exportar backup
 				</button>
-				<button
-					className="rounded-md px-2 py-1.5 text-left hover:bg-foreground/5"
-					onClick={() => file.current?.click()}>
+				<button className={item} onClick={() => file.current?.click()}>
 					Importar backup
 				</button>
 				<button
-					className="rounded-md px-2 py-1.5 text-left text-rose-600 hover:bg-rose-500/10 dark:text-rose-400"
+					className={`${item} text-px-red`}
 					onClick={() => {
-						if (window.confirm('Apagar TODOS os seus dados? Isso não pode ser desfeito.'))
-							resetData()
+						if (window.confirm('Apagar TODOS os seus dados? Isso não pode ser desfeito.')) resetData()
 					}}>
 					Apagar tudo
 				</button>
@@ -96,22 +84,23 @@ export function Shell({ children }: { children: ReactNode }) {
 		if (state.ready) mutate((s) => syncGame(s))
 	}, [state])
 
-	const xp = state.ready ? xpBreakdown(state).total : 0
-	const lv = levelInfo(xp)
+	const life = state.ready ? xpBreakdown(state).total : 0
+	const monthXp = state.ready ? xpBreakdown(state, seasonRange()).total : 0
+	const lv = levelInfo(life)
+	const rank = rankFor(monthXp, state.settings.tiers)
 
 	return (
-		<div
-			className={`min-h-screen w-full bg-background text-foreground antialiased ${PALETTE}`}
-			style={{ fontFamily: "var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" }}>
+		<div data-theme={state.settings.theme} className="bg-grid min-h-screen w-full bg-background text-foreground">
 			<div className="mx-auto w-full max-w-[1180px] px-4 py-6">
-				<div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-					<div className="flex items-center gap-3">
-						<span className="text-[15px] tracking-[0.2em]">VIDA</span>
+				<div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+					<div className="flex flex-wrap items-center gap-3">
+						<span className="font-display text-[18px] tracking-[0.15em] text-primary">VIDA</span>
 						{state.ready && (
-							<Link
-								href="/metas"
-								className="rounded-full px-2.5 py-1 text-[12px] text-muted-foreground ring-1 ring-border transition hover:text-foreground">
-								Nv {lv.level} · {lv.title} · {xp} XP
+							<Link href="/metas" className="px-chip hover:brightness-125" title="Ranking do mês e nível vitalício">
+								<RankBadge index={rank.index} size={2} />
+								<span>
+									{rank.rank.label} · Nv {lv.level} · {monthXp} XP
+								</span>
 							</Link>
 						)}
 					</div>
@@ -120,19 +109,12 @@ export function Shell({ children }: { children: ReactNode }) {
 						<DataMenu />
 					</div>
 				</div>
-				<nav aria-label="Seções" className="-mx-1 mb-8 flex gap-1 overflow-x-auto px-1 pb-1">
+				<nav aria-label="Seções" className="-mx-1 mb-8 flex gap-2 overflow-x-auto px-1 pb-2">
 					{NAV.map((n) => {
 						const active = n.href === '/' ? path === '/' : path.startsWith(n.href)
 						return (
-							<Link
-								key={n.href}
-								href={n.href}
-								aria-current={active ? 'page' : undefined}
-								className={`shrink-0 rounded-full px-3.5 py-1.5 text-[13px] transition ${
-									active
-										? 'bg-foreground text-background'
-										: 'text-muted-foreground ring-1 ring-border hover:text-foreground'
-								}`}>
+							<Link key={n.href} href={n.href} aria-current={active ? 'page' : undefined} className="px-btn shrink-0">
+								<PixelIcon name={n.icon} />
 								{n.label}
 							</Link>
 						)

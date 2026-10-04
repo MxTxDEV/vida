@@ -118,6 +118,28 @@ export interface Settlement {
 	resolved: boolean
 }
 
+export interface Settings {
+	theme: 'noite' | 'gameboy' | 'arcade'
+	financeCategories: string[]
+	workoutGroups: string[]
+	platforms: string[]
+	/** XP given per action. */
+	xp: {
+		diary: number
+		tx: number
+		workout: number
+		/** Pages read for 1 XP. */
+		pagesPerXp: number
+		task: number
+		post: number
+		/** Bonus for a day with 3 or more daily missions done. */
+		quest: number
+	}
+	/** Monthly XP needed for Prata, Ouro, Platina and Diamante. */
+	tiers: number[]
+	hiddenWidgets: string[]
+}
+
 export interface AppState {
 	ready: boolean
 	/** Time of the last local edit (ms). Decides which copy wins when syncing. */
@@ -136,6 +158,7 @@ export interface AppState {
 	unlocked: Record<string, string>
 	/** Dashboard widget order. */
 	layout: string[]
+	settings: Settings
 }
 
 export type CollKey =
