@@ -2,9 +2,9 @@
 @import "tw-animate-css";
 
 @theme inline {
-  --font-sans: var(--font-pixel-body);
-  --font-mono: var(--font-pixel-body);
-  --font-display: var(--font-pixel-title);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-body);
+  --font-display: var(--font-display);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -28,78 +28,87 @@
   --color-px-yellow: var(--px-yellow);
   --color-px-red: var(--px-red);
   --color-px-pink: var(--px-pink);
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
 }
 
 /* ---- Themes: every colour in the app comes from these tokens ---- */
 :root,
-[data-theme="noite"] {
+[data-theme="escuro"] {
   color-scheme: dark;
-  --background: #120c2e;
-  --foreground: #f4efff;
-  --card: #1d1548;
-  --card-foreground: #f4efff;
-  --muted: #2e2470;
-  --muted-foreground: #a79fe0;
-  --border: #6b5fe0;
-  --ring: #ffd84a;
-  --primary: #ffd84a;
-  --primary-foreground: #120c2e;
-  --px-blue: #4cc9f0;
-  --px-green: #3ddc84;
-  --px-yellow: #ffd84a;
-  --px-red: #ff4d6d;
-  --px-pink: #ff7bd5;
-  --px-shadow: #07041a;
-  --grid: rgba(255, 255, 255, 0.035);
+  --background: #0a0c11;
+  --foreground: #eef1f7;
+  --card: #11141b;
+  --card-foreground: #eef1f7;
+  --muted: #1a1f29;
+  --muted-foreground: #8b94a7;
+  --border: #232937;
+  --ring: #8ab4ff;
+  --primary: #8ab4ff;
+  --primary-foreground: #0a0c11;
+  --px-blue: #6aa6ff;
+  --px-green: #34d399;
+  --px-yellow: #fbbf24;
+  --px-red: #fb7185;
+  --px-pink: #a78bfa;
+  --hover: rgba(255, 255, 255, 0.06);
+  --sheen: rgba(255, 255, 255, 0.035);
+  --glow: rgba(106, 166, 255, 0.13);
+  --grid: rgba(255, 255, 255, 0.025);
+  --accent-soft: rgba(138, 180, 255, 0.12);
 }
 
-[data-theme="gameboy"] {
+[data-theme="claro"] {
   color-scheme: light;
-  --background: #9bbc0f;
-  --foreground: #0f380f;
-  --card: #8bac0f;
-  --card-foreground: #0f380f;
-  --muted: #7a9a0c;
-  --muted-foreground: #2f5a22;
-  --border: #0f380f;
-  --ring: #0f380f;
-  --primary: #0f380f;
-  --primary-foreground: #9bbc0f;
-  --px-blue: #1d5a78;
-  --px-green: #0f380f;
-  --px-yellow: #6b5a00;
-  --px-red: #8b1e1e;
-  --px-pink: #7a2a5a;
-  --px-shadow: #306230;
-  --grid: rgba(15, 56, 15, 0.08);
+  --background: #f4f6fa;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --muted: #eceff5;
+  --muted-foreground: #64708a;
+  --border: #dde2ec;
+  --ring: #2f5bea;
+  --primary: #2f5bea;
+  --primary-foreground: #ffffff;
+  --px-blue: #2f6fed;
+  --px-green: #059669;
+  --px-yellow: #d97706;
+  --px-red: #e11d48;
+  --px-pink: #7c3aed;
+  --hover: rgba(15, 23, 42, 0.05);
+  --sheen: rgba(255, 255, 255, 0);
+  --glow: rgba(47, 91, 234, 0.08);
+  --grid: rgba(15, 23, 42, 0.035);
+  --accent-soft: rgba(47, 91, 234, 0.1);
 }
 
-[data-theme="arcade"] {
+[data-theme="aurora"] {
   color-scheme: dark;
-  --background: #000000;
-  --foreground: #ffffff;
-  --card: #0a0a16;
-  --card-foreground: #ffffff;
-  --muted: #17172e;
-  --muted-foreground: #8d93bd;
-  --border: #00f0ff;
-  --ring: #ff2bd6;
-  --primary: #ff2bd6;
-  --primary-foreground: #000000;
-  --px-blue: #00f0ff;
-  --px-green: #39ff14;
-  --px-yellow: #ffe600;
-  --px-red: #ff2b4d;
-  --px-pink: #ff2bd6;
-  --px-shadow: #2a0a35;
-  --grid: rgba(0, 240, 255, 0.05);
+  --background: #050f14;
+  --foreground: #e8f7f5;
+  --card: #0a1a22;
+  --card-foreground: #e8f7f5;
+  --muted: #11262f;
+  --muted-foreground: #7fa3a8;
+  --border: #173540;
+  --ring: #2dd4bf;
+  --primary: #2dd4bf;
+  --primary-foreground: #04100f;
+  --px-blue: #38bdf8;
+  --px-green: #4ade80;
+  --px-yellow: #fcd34d;
+  --px-red: #fb7185;
+  --px-pink: #c084fc;
+  --hover: rgba(255, 255, 255, 0.06);
+  --sheen: rgba(45, 212, 191, 0.04);
+  --glow: rgba(45, 212, 191, 0.14);
+  --grid: rgba(45, 212, 191, 0.03);
+  --accent-soft: rgba(45, 212, 191, 0.12);
 }
 
-/* ---- Pixel look ---- */
+/* ---- Base ---- */
 * {
   border-color: var(--border);
 }
@@ -111,43 +120,42 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-pixel-body), ui-monospace, monospace;
-  font-size: 17px;
-  line-height: 1.35;
-  -webkit-font-smoothing: none;
-  font-smooth: never;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
 }
 
 .font-display {
-  font-family: var(--font-pixel-title), monospace;
-  letter-spacing: 0;
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: -0.01em;
 }
 
 .bg-grid {
-  background-image: linear-gradient(var(--grid) 2px, transparent 2px),
-    linear-gradient(90deg, var(--grid) 2px, transparent 2px);
-  background-size: 32px 32px;
+  background-image: radial-gradient(900px 380px at 50% -140px, var(--glow), transparent 70%),
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: auto, 56px 56px, 56px 56px;
 }
 
-/* Corners cut one pixel step, like a sprite frame. */
+/* ---- Components ---- */
 .px-notch {
-  clip-path: polygon(
-    0 4px, 4px 4px, 4px 0,
-    calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
-    100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
-    4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px)
-  );
+  clip-path: none;
 }
 
 .px-box {
-  background: var(--card);
-  border: 4px solid var(--border);
+  background-color: var(--card);
+  background-image: linear-gradient(180deg, var(--sheen), transparent 55%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
 }
 
 .px-label {
-  font-family: var(--font-pixel-title), monospace;
-  font-size: 10px;
-  line-height: 1.5;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
@@ -159,105 +167,106 @@ body {
   justify-content: center;
   gap: 8px;
   min-height: 36px;
-  padding: 4px 12px;
-  border: 4px solid var(--border);
-  background: var(--muted);
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
   color: var(--foreground);
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 500;
   line-height: 1;
   cursor: pointer;
   user-select: none;
-  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.3), inset 0 4px 0 rgba(255, 255, 255, 0.12);
+  transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.px-btn:hover {
+  background: var(--hover);
+  border-color: color-mix(in srgb, var(--foreground) 22%, var(--border));
+}
+.px-btn[aria-current="page"],
+.px-btn[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+  color: var(--primary);
 }
 .px-btn-primary {
   background: var(--primary);
+  border-color: transparent;
   color: var(--primary-foreground);
-  border-color: var(--px-shadow);
+  box-shadow: 0 6px 20px -8px var(--primary);
 }
-.px-btn:hover,
 .px-btn-primary:hover {
-  filter: brightness(1.15);
+  filter: brightness(1.08);
 }
 .px-btn:active,
 .px-btn-primary:active {
-  transform: translateY(2px);
-  box-shadow: inset 0 4px 0 rgba(0, 0, 0, 0.3);
+  transform: translateY(1px);
 }
 .px-btn:disabled,
 .px-btn-primary:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: not-allowed;
   filter: none;
-}
-.px-btn[aria-current="page"] {
-  background: var(--primary);
-  color: var(--primary-foreground);
-  border-color: var(--px-shadow);
+  box-shadow: none;
 }
 
 .px-input {
   min-width: 0;
   height: 36px;
-  padding: 0 8px;
-  border: 4px solid var(--border);
-  background: var(--background);
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--foreground) 4%, transparent);
   color: var(--foreground);
-  font-size: 16px;
-  box-shadow: inset 0 4px 0 rgba(0, 0, 0, 0.35);
+  font-size: 14px;
   outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 .px-input::placeholder {
   color: var(--muted-foreground);
   opacity: 0.7;
 }
 .px-input:focus {
-  border-color: var(--ring);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+select.px-input {
+  background-color: var(--card);
 }
 
 .px-bar {
   display: block;
-  height: 14px;
-  border: 4px solid var(--border);
-  background: var(--background);
-  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground) 10%, transparent);
   overflow: hidden;
 }
 .px-bar > i {
   display: block;
   height: 100%;
-  transition: width 0.4s steps(10);
-  background-image: repeating-linear-gradient(90deg, transparent 0 6px, rgba(0, 0, 0, 0.25) 6px 8px);
+  border-radius: 999px;
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .px-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-  border: 4px solid var(--border);
-  background: var(--muted);
-  font-size: 15px;
+  gap: 8px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--foreground) 3%, transparent);
+  font-size: 13px;
 }
 
-/* ---- Dashboard grid: pixel frames and hard shadows ---- */
-[data-slot="widget"] {
-  box-shadow: none !important;
-  filter: drop-shadow(4px 4px 0 var(--px-shadow));
-}
+/* ---- Dashboard grid ---- */
 [data-slot="widget"]:focus-visible {
-  outline: 4px solid var(--ring);
-  outline-offset: 2px;
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  border-radius: var(--widget-radius);
 }
 [data-slot="widget"] > div {
-  border: 4px solid var(--border);
-  box-shadow: none !important;
-  background: var(--card);
-  clip-path: polygon(
-    0 4px, 4px 4px, 4px 0,
-    calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
-    100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%,
-    4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px)
-  ) !important;
+  background-image: linear-gradient(180deg, var(--sheen), transparent 55%);
 }
 
 @media (prefers-reduced-motion: reduce) {

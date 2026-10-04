@@ -48,7 +48,7 @@ function Gym() {
 							<span
 								key={d}
 								title={`${fmtShort(d)}${s.workouts.some((w) => w.date === d) ? ' · treinou' : ''}`}
-								className={`aspect-square ${s.workouts.some((w) => w.date === d) ? HEAT[4] : HEAT[0]}`}
+								className={`aspect-square rounded-[4px] ${s.workouts.some((w) => w.date === d) ? HEAT[4] : HEAT[0]}`}
 							/>
 						))}
 					</div>
@@ -61,7 +61,7 @@ function Gym() {
 						{weighIns.length > 1 ? (
 							<Bars data={weighIns} color="pink" height={96} baseline="min" format={(n) => `${n}`} />
 						) : (
-							<p className="py-6 text-center text-[16px] text-muted-foreground">Anote o peso em 2 treinos para ver a evolução.</p>
+							<p className="py-6 text-center text-[14px] text-muted-foreground">Anote o peso em 2 treinos para ver a evolução.</p>
 						)}
 					</Panel>
 				</div>

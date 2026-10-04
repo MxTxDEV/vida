@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { PageHeader, Panel, Ready } from '@/components/bits'
-import { RankBadge } from '@/components/pixel'
+import { RankBadge } from '@/components/badges'
 import { defaultSettings, THEMES } from '@/lib/settings'
 import { mutate, useApp } from '@/lib/store'
 import type { Settings } from '@/lib/types'
@@ -12,9 +12,9 @@ const save = (patch: Partial<Settings>) =>
 	mutate((s) => ({ ...s, settings: { ...s.settings, ...patch } }))
 
 const SWATCH: Record<Settings['theme'], string[]> = {
-	noite: ['#120c2e', '#1d1548', '#6b5fe0', '#ffd84a', '#4cc9f0'],
-	gameboy: ['#9bbc0f', '#8bac0f', '#306230', '#0f380f', '#1d5a78'],
-	arcade: ['#000000', '#0a0a16', '#00f0ff', '#ff2bd6', '#39ff14'],
+	escuro: ['#0a0c11', '#11141b', '#232937', '#8ab4ff', '#34d399'],
+	claro: ['#f4f6fa', '#ffffff', '#dde2ec', '#2f5bea', '#059669'],
+	aurora: ['#050f14', '#0a1a22', '#173540', '#2dd4bf', '#4ade80'],
 }
 
 /** A list of names you can add to and remove from. */
@@ -28,7 +28,7 @@ function ListEditor({ title, hint, items, onChange }: { title: string; hint: str
 	}
 	return (
 		<Panel title={title}>
-			<p className="mb-3 text-[15px] text-muted-foreground">{hint}</p>
+			<p className="mb-3 text-[13px] text-muted-foreground">{hint}</p>
 			<ul className="mb-3 flex flex-wrap gap-2">
 				{items.map((it) => (
 					<li key={it} className="px-chip">
@@ -57,7 +57,7 @@ function ListEditor({ title, hint, items, onChange }: { title: string; hint: str
 
 function NumberField({ label, value, onSave, suffix }: { label: string; value: number; onSave: (n: number) => void; suffix?: string }) {
 	return (
-		<label className="flex items-center justify-between gap-3 text-[16px]">
+		<label className="flex items-center justify-between gap-3 text-[14px]">
 			<span>{label}</span>
 			<span className="flex items-center gap-2">
 				<input
@@ -73,7 +73,7 @@ function NumberField({ label, value, onSave, suffix }: { label: string; value: n
 					onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
 					className="px-input w-24 text-right tabular-nums"
 				/>
-				{suffix && <span className="w-12 text-[14px] text-muted-foreground">{suffix}</span>}
+				{suffix && <span className="w-12 text-[13px] text-muted-foreground">{suffix}</span>}
 			</span>
 		</label>
 	)
@@ -106,10 +106,10 @@ function Options() {
 									className={`px-box w-full p-3 text-left ${st.theme === t.id ? '!border-primary' : ''}`}>
 									<span className="mb-2 flex">
 										{SWATCH[t.id].map((c) => (
-											<span key={c} className="h-6 flex-1" style={{ background: c }} />
+											<span key={c} className="h-6 flex-1 first:rounded-l-md last:rounded-r-md" style={{ background: c }} />
 										))}
 									</span>
-									<span className="text-[17px]">{t.label}{st.theme === t.id ? ' ✓' : ''}</span>
+									<span className="text-[15px]">{t.label}{st.theme === t.id ? ' ✓' : ''}</span>
 								</button>
 							</li>
 						))}
@@ -122,7 +122,7 @@ function Options() {
 							const on = !st.hiddenWidgets.includes(w.id)
 							return (
 								<li key={w.id}>
-									<label className="flex cursor-pointer items-center gap-3 text-[17px]">
+									<label className="flex cursor-pointer items-center gap-3 text-[15px]">
 										<input
 											type="checkbox"
 											checked={on}
@@ -151,7 +151,7 @@ function Options() {
 					</Panel>
 
 					<Panel title="Faixas do ranking mensal" meta={<button className="px-btn" onClick={() => save({ tiers: def.tiers })}>Padrão</button>}>
-						<p className="mb-3 text-[15px] text-muted-foreground">XP no mês para entrar em cada rank. Bronze começa em 0.</p>
+						<p className="mb-3 text-[13px] text-muted-foreground">XP no mês para entrar em cada rank. Bronze começa em 0.</p>
 						<div className="grid gap-3">
 							{ranks.map((name, i) => (
 								<div key={name} className="flex items-center gap-3">

@@ -68,7 +68,7 @@ function Reading() {
 					{s.books.some((b) => b.total > 0) && (
 						<ul className="mt-4 space-y-2.5 border-t border-border pt-4">
 							{s.books.filter((b) => b.total > 0).map((b) => (
-								<li key={b.id} className="grid grid-cols-[minmax(0,1fr)_1fr_90px] items-center gap-3 text-[16px]">
+								<li key={b.id} className="grid grid-cols-[minmax(0,1fr)_1fr_90px] items-center gap-3 text-[14px]">
 									<span className="truncate">{b.title}</span>
 									<Bar pct={b.status === 'Terminado' ? 1 : read(b.id) / b.total} tone={b.status === 'Terminado' ? 'ok' : 'blue'} />
 									<span className="text-right text-muted-foreground tabular-nums">{Math.min(read(b.id), b.total)}/{b.total}</span>

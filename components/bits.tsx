@@ -12,7 +12,7 @@ export const num = (n: number) => n.toLocaleString('pt-BR')
 export function Ready({ children }: { children: ReactNode }) {
 	const { ready } = useApp()
 	if (!ready)
-		return <p className="font-display py-20 text-center text-[11px] text-muted-foreground">CARREGANDO…</p>
+		return <p className="px-label py-20 text-center">Carregando…</p>
 	return <>{children}</>
 }
 
@@ -28,8 +28,8 @@ export function PageHeader({
 	return (
 		<header className="mb-6 flex flex-wrap items-end justify-between gap-3">
 			<div>
-				<h1 className="font-display text-[16px] leading-snug text-primary">{title}</h1>
-				{hint && <p className="mt-2 text-[16px] text-muted-foreground">{hint}</p>}
+				<h1 className="font-display text-[26px] font-semibold leading-tight">{title}</h1>
+				{hint && <p className="mt-2 text-[14px] text-muted-foreground">{hint}</p>}
 			</div>
 			{children}
 		</header>
@@ -52,7 +52,7 @@ export function Panel({
 			{(title || meta) && (
 				<header className="mb-4 flex flex-wrap items-center justify-between gap-3">
 					<h2 className="px-label">{title}</h2>
-					{meta && <span className="text-[15px] text-muted-foreground">{meta}</span>}
+					{meta && <span className="text-[13px] text-muted-foreground">{meta}</span>}
 				</header>
 			)}
 			{children}
@@ -148,18 +148,18 @@ export function Bars({
 				{data.map((d) => (
 					<div key={d.label} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-1">
 						{d.v2 === undefined && d.v > 0 && (
-							<span className="text-[13px] leading-none text-muted-foreground tabular-nums">{format(d.v)}</span>
+							<span className="text-[12px] leading-none text-muted-foreground tabular-nums">{format(d.v)}</span>
 						)}
 						<div className="flex w-full items-end justify-center gap-[3px]" style={{ height }}>
 							<span
 								title={`${d.label}: ${format(d.v)}`}
-								className={`block w-full max-w-[28px] ${d.hi ? 'bg-primary' : TONE_BG[color]}`}
+								className={`block w-full max-w-[28px] rounded-t-[6px] ${d.hi ? 'bg-primary' : TONE_BG[color]}`}
 								style={{ height: px(d.v), alignSelf: 'flex-end' }}
 							/>
 							{d.v2 !== undefined && (
 								<span
 									title={`${d.label}: ${format(d.v2)}`}
-									className={`block w-full max-w-[28px] ${TONE_BG[color2]}`}
+									className={`block w-full max-w-[28px] rounded-t-[6px] ${TONE_BG[color2]}`}
 									style={{ height: px(d.v2), alignSelf: 'flex-end' }}
 								/>
 							)}
@@ -169,12 +169,12 @@ export function Bars({
 			</div>
 			<div className="mt-2 flex gap-2">
 				{data.map((d) => (
-					<span key={d.label} className="px-label min-w-0 flex-1 truncate text-center !text-[8px]">
+					<span key={d.label} className="px-label min-w-0 flex-1 truncate text-center !text-[10px]">
 						{d.label}
 					</span>
 				))}
 			</div>
-			{empty && <p className="mt-2 text-center text-[15px] text-muted-foreground">Ainda sem dados.</p>}
+			{empty && <p className="mt-2 text-center text-[13px] text-muted-foreground">Ainda sem dados.</p>}
 		</div>
 	)
 }

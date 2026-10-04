@@ -70,7 +70,7 @@ function Finance() {
 				</Panel>
 				<Panel title="Evolução: receitas × gastos" meta="últimos 6 meses">
 					<Bars data={months} color="ok" color2="err" format={brl} />
-					<p className="mt-3 text-[14px] text-muted-foreground">
+					<p className="mt-3 text-[13px] text-muted-foreground">
 						<span className="text-px-green">■</span> receitas &nbsp; <span className="text-px-red">■</span> gastos
 					</p>
 				</Panel>
@@ -78,7 +78,7 @@ function Finance() {
 					<Panel title="Gastos por categoria">
 						<ul className="space-y-2.5">
 							{cats.map(([c, v]) => (
-								<li key={c} className="grid grid-cols-[110px_1fr_110px] items-center gap-3 text-[16px]">
+								<li key={c} className="grid grid-cols-[110px_1fr_110px] items-center gap-3 text-[14px]">
 									<span className="truncate">{c}</span>
 									<Bar pct={v / cats[0][1]} />
 									<span className="text-right text-muted-foreground tabular-nums">{brl(v)}</span>

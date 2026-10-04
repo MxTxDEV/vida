@@ -1,13 +1,13 @@
 import type { Settings } from './types'
 
 export const THEMES: { id: Settings['theme']; label: string }[] = [
-	{ id: 'noite', label: 'Noite' },
-	{ id: 'gameboy', label: 'Game Boy' },
-	{ id: 'arcade', label: 'Arcade' },
+	{ id: 'escuro', label: 'Escuro' },
+	{ id: 'claro', label: 'Claro' },
+	{ id: 'aurora', label: 'Aurora' },
 ]
 
 export const defaultSettings = (): Settings => ({
-	theme: 'noite',
+	theme: 'escuro',
 	financeCategories: ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Lazer', 'Estudos', 'Assinaturas', 'Compras', 'Investimento', 'Salário', 'Freelas', 'Outros'],
 	workoutGroups: ['Peito', 'Costas', 'Pernas', 'Ombros', 'Braços', 'Core', 'Cardio', 'Full body'],
 	platforms: ['Instagram', 'TikTok', 'YouTube', 'X / Twitter', 'LinkedIn', 'Blog', 'Outro'],

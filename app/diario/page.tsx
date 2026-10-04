@@ -43,7 +43,7 @@ function Diary() {
 							<span
 								key={d}
 								title={`${fmtShort(d)} · ${per.get(d) ?? 0} anotações`}
-								className={`aspect-square ${d === now ? 'outline-2 outline-foreground' : ''} ${HEAT[heatLevel(per.get(d) ?? 0)]}`}
+								className={`aspect-square rounded-[4px] ${d === now ? 'outline-2 outline-foreground' : ''} ${HEAT[heatLevel(per.get(d) ?? 0)]}`}
 							/>
 						))}
 					</div>
@@ -61,7 +61,7 @@ function Diary() {
 						empty="Sem registros nos últimos 30 dias. Anote o primeiro acima."
 					/>
 					{rows.length > 0 && (
-						<p className="mt-3 text-[14px] text-muted-foreground">
+						<p className="mt-3 text-[13px] text-muted-foreground">
 							Último registro: {fmtDay(rows[0].date)} às {rows[0].time}
 						</p>
 					)}

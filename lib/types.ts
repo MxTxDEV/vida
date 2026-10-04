@@ -119,7 +119,7 @@ export interface Settlement {
 }
 
 export interface Settings {
-	theme: 'noite' | 'gameboy' | 'arcade'
+	theme: 'escuro' | 'claro' | 'aurora'
 	financeCategories: string[]
 	workoutGroups: string[]
 	platforms: string[]

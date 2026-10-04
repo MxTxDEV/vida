@@ -56,7 +56,7 @@ function Input({
 				aria-label={label}
 				checked={Boolean(value)}
 				onChange={(e) => onValue(e.target.checked)}
-				className="size-5 justify-self-start accent-[var(--primary)]"
+				className="size-4 justify-self-start accent-[var(--primary)]"
 			/>
 		)
 	if (col.type === 'select')
@@ -144,7 +144,7 @@ export function Sheet<T extends { id: string }>({
 		<div className="overflow-x-auto">
 			<div className="min-w-[640px]">
 				<div
-					className="px-label grid gap-2 px-1 pb-2 !text-[9px]"
+					className="px-label grid gap-2 px-1 pb-2 !text-[11px]"
 					style={{ gridTemplateColumns: template }}>
 					{cols.map((c) => (
 						<span key={c.key} className={c.type === 'number' ? 'text-right' : ''}>
@@ -154,7 +154,7 @@ export function Sheet<T extends { id: string }>({
 					<span />
 				</div>
 				<div
-					className="grid items-center gap-2 bg-foreground/[0.07] p-1.5"
+					className="grid items-center gap-2 rounded-xl bg-foreground/[0.05] p-1.5"
 					style={{ gridTemplateColumns: template }}>
 					{cols.map((c) => (
 						<Input
@@ -176,12 +176,12 @@ export function Sheet<T extends { id: string }>({
 					</button>
 				</div>
 				{rows.length === 0 && (
-					<p className="px-1 py-6 text-center text-[16px] text-muted-foreground">{empty}</p>
+					<p className="px-1 py-6 text-center text-[14px] text-muted-foreground">{empty}</p>
 				)}
 				{rows.map((row) => (
 					<div
 						key={row.id}
-						className="grid items-center gap-2 border-b-2 border-border/40 p-1 last:border-0"
+						className="grid items-center gap-2 border-b border-border/60 p-1 last:border-0"
 						style={{ gridTemplateColumns: template }}>
 						{cols.map((c) => (
 							<Input

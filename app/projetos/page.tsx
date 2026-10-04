@@ -64,7 +64,7 @@ function Projects() {
 					{s.projects.length > 0 && (
 						<ul className="mt-4 space-y-2.5 border-t border-border pt-4">
 							{s.projects.map((p) => (
-								<li key={p.id} className="grid grid-cols-[minmax(0,1fr)_1fr_50px] items-center gap-3 text-[16px]">
+								<li key={p.id} className="grid grid-cols-[minmax(0,1fr)_1fr_50px] items-center gap-3 text-[14px]">
 									<span className="truncate">{p.name}</span>
 									<Bar pct={p.status === 'Concluído' ? 1 : progress(p.id)} tone={p.status === 'Concluído' ? 'ok' : 'blue'} />
 									<span className="text-right text-muted-foreground tabular-nums">{Math.round((p.status === 'Concluído' ? 1 : progress(p.id)) * 100)}%</span>

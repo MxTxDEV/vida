@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Bar, Bars, PageHeader, Panel, Ready, TONE_TEXT, brl, num } from '@/components/bits'
-import { Hero, PixelIcon, RankBadge } from '@/components/pixel'
+import { Icon, LevelRing, RankBadge } from '@/components/badges'
 import { fmtShort, monthEnd, today } from '@/lib/dates'
 import {
 	ACHIEVEMENTS,
@@ -69,7 +69,7 @@ function GoalCard({ g }: { g: Goal }) {
 				</div>
 			</div>
 
-			<div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[16px]">
+			<div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[14px]">
 				<label className="flex items-center gap-2">
 					<span className="text-muted-foreground">Área</span>
 					<select className="px-input" value={g.area} onChange={(e) => set({ area: e.target.value as Area })}>
@@ -91,7 +91,7 @@ function GoalCard({ g }: { g: Goal }) {
 
 			<div className="mt-3 space-y-1.5">
 				<Bar pct={g.dir === 'max' ? (g.target ? p.value / g.target : 0) : p.pct} tone={over ? 'err' : p.met ? 'ok' : 'blue'} />
-				<p className="flex flex-wrap justify-between gap-2 text-[15px] text-muted-foreground">
+				<p className="flex flex-wrap justify-between gap-2 text-[13px] text-muted-foreground">
 					<span>{fmtVal(g, p.value)} de {fmtVal(g, g.target)}</span>
 					<span>
 						{p.settled
@@ -103,7 +103,7 @@ function GoalCard({ g }: { g: Goal }) {
 				</p>
 			</div>
 
-			<div className="mt-3 grid gap-3 text-[15px] sm:grid-cols-2">
+			<div className="mt-3 grid gap-3 text-[13px] sm:grid-cols-2">
 				<div className="grid gap-1">
 					<span className="text-px-yellow">★ Se cumprir</span>
 					<Edit wide label="Recompensa" value={g.reward} onSave={(v) => set({ reward: v })} />
@@ -204,11 +204,11 @@ function Goals() {
 						<div className="flex items-center gap-5">
 							<RankBadge index={r.index} size={7} />
 							<div className="min-w-0 flex-1">
-								<p className="font-display text-[16px] text-primary">{r.rank.label.toUpperCase()}</p>
+								<p className="font-display text-[26px] font-semibold">{r.rank.label}</p>
 								<p className="mt-2 text-[30px] leading-none tabular-nums">{num(season.total)} XP</p>
 								<div className="mt-3 space-y-1">
 									<Bar pct={r.pct} tone="warn" />
-									<p className="text-[15px] text-muted-foreground">
+									<p className="text-[13px] text-muted-foreground">
 										{r.next ? `Faltam ${num(r.next.at - season.total)} XP para ${r.next.rank.label}` : 'Você está no rank máximo!'}
 									</p>
 								</div>
@@ -218,7 +218,7 @@ function Goals() {
 							{RANKS.map((x, i) => (
 								<li key={x.id} className={`flex flex-col items-center gap-1 ${i <= r.index ? '' : 'opacity-40'}`}>
 									<RankBadge index={i} size={3} />
-									<span className="text-[13px]">{x.label}</span>
+									<span className="text-[12px]">{x.label}</span>
 									<span className="text-[12px] text-muted-foreground tabular-nums">{num(floors[i])}+</span>
 								</li>
 							))}
@@ -227,17 +227,16 @@ function Goals() {
 
 					<Panel title="Nível vitalício" meta={`${num(life.total)} XP no total`}>
 						<div className="flex items-center gap-5">
-							<Hero size={7} />
+							<LevelRing level={lv.level} pct={lv.pct} size={104} />
 							<div className="min-w-0 flex-1">
-								<p className="font-display text-[16px]">Nv {lv.level}</p>
-								<p className="mt-1 text-[18px] text-muted-foreground">{lv.title}</p>
+								<p className="mt-1 text-[16px] text-muted-foreground">{lv.title}</p>
 								<div className="mt-3 space-y-1">
 									<Bar pct={lv.pct} tone="blue" />
-									<p className="text-[15px] text-muted-foreground tabular-nums">{lv.into}/{lv.span} XP para o nível {lv.level + 1}</p>
+									<p className="text-[13px] text-muted-foreground tabular-nums">{lv.into}/{lv.span} XP para o nível {lv.level + 1}</p>
 								</div>
 							</div>
 						</div>
-						<details className="mt-4 text-[15px]">
+						<details className="mt-4 text-[13px]">
 							<summary className="cursor-pointer text-muted-foreground">De onde vem o XP (mês | total)</summary>
 							<ul className="mt-2 space-y-1">
 								{life.rows.map((row, i) => (
@@ -258,29 +257,29 @@ function Goals() {
 							{history.slice(0, 12).map((h) => (
 								<li key={h.month} className="px-box flex flex-col items-center gap-1 p-2 text-center">
 									<RankBadge index={h.rank.index} size={3} />
-									<span className="text-[14px]">{h.rank.rank.label}</span>
-									<span className="text-[13px] capitalize text-muted-foreground">{monthName(h.month)}</span>
-									<span className="text-[13px] tabular-nums text-muted-foreground">{num(h.xp)} XP</span>
+									<span className="text-[13px]">{h.rank.rank.label}</span>
+									<span className="text-[12px] capitalize text-muted-foreground">{monthName(h.month)}</span>
+									<span className="text-[12px] tabular-nums text-muted-foreground">{num(h.xp)} XP</span>
 								</li>
 							))}
 						</ul>
 					) : (
-						<p className="mt-4 text-[16px] text-muted-foreground">Quando o mês virar, o rank final dele fica guardado aqui.</p>
+						<p className="mt-4 text-[14px] text-muted-foreground">Quando o mês virar, o rank final dele fica guardado aqui.</p>
 					)}
 				</Panel>
 
 				<Panel title="Missões do dia" meta={`${qDone}/${q.length} · bônus com ${QUEST_MIN}`}>
 					<ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
 						{q.map((x) => (
-							<li key={x.id} className="flex items-center gap-2 text-[17px]">
-								<span className={`inline-flex size-6 shrink-0 items-center justify-center border-4 border-border ${x.done ? 'bg-px-green text-background' : ''}`}>
-									{x.done && <PixelIcon name="check" size={2} />}
+							<li key={x.id} className="flex items-center gap-2 text-[15px]">
+								<span className={`inline-flex size-6 shrink-0 items-center justify-center rounded-md border border-border ${x.done ? 'bg-px-green text-background' : ''}`}>
+									{x.done && <Icon name="check" size={14} />}
 								</span>
 								<span className={x.done ? 'text-muted-foreground line-through' : ''}>{x.label}</span>
 							</li>
 						))}
 					</ul>
-					<p className={`mt-3 text-[16px] ${qDone >= QUEST_MIN ? TONE_TEXT.ok : 'text-muted-foreground'}`}>
+					<p className={`mt-3 text-[14px] ${qDone >= QUEST_MIN ? TONE_TEXT.ok : 'text-muted-foreground'}`}>
 						{qDone >= QUEST_MIN ? `★ Bônus de +${s.settings.xp.quest} XP garantido hoje!` : `Faça ${QUEST_MIN} missões hoje para ganhar +${s.settings.xp.quest} XP.`}
 					</p>
 				</Panel>
@@ -288,7 +287,7 @@ function Goals() {
 				<Panel title="Metas do período" meta={<NewGoal />}>
 					<ul className="grid gap-3">
 						{s.goals.map((g) => <GoalCard key={g.id} g={g} />)}
-						{s.goals.length === 0 && <p className="text-[16px] text-muted-foreground">Nenhuma meta. Crie a primeira.</p>}
+						{s.goals.length === 0 && <p className="text-[14px] text-muted-foreground">Nenhuma meta. Crie a primeira.</p>}
 					</ul>
 				</Panel>
 
@@ -296,12 +295,12 @@ function Goals() {
 					<Panel title="★ Prêmios disponíveis" meta={`${rewards.length}`}>
 						<ul className="space-y-3">
 							{(allRewards ? rewards : rewards.slice(0, LIMIT)).map((x) => (
-								<li key={x.id} className="flex items-center gap-3 text-[16px]">
-									<span className="min-w-0 flex-1"><span className="block truncate">{x.text || 'Prêmio'}</span><span className="text-[14px] text-muted-foreground">{x.goalTitle} · {fmtShort(x.date)}</span></span>
+								<li key={x.id} className="flex items-center gap-3 text-[14px]">
+									<span className="min-w-0 flex-1"><span className="block truncate">{x.text || 'Prêmio'}</span><span className="text-[13px] text-muted-foreground">{x.goalTitle} · {fmtShort(x.date)}</span></span>
 									<button className="px-btn" onClick={() => resolve(x.id)}>Usar</button>
 								</li>
 							))}
-							{rewards.length === 0 && <li className="text-[16px] text-muted-foreground">Nenhum prêmio guardado.</li>}
+							{rewards.length === 0 && <li className="text-[14px] text-muted-foreground">Nenhum prêmio guardado.</li>}
 							{rewards.length > LIMIT && (
 								<li><button className="px-btn" onClick={() => setAllRewards((v) => !v)}>{allRewards ? 'Ver menos' : `Ver todos (${rewards.length})`}</button></li>
 							)}
@@ -310,12 +309,12 @@ function Goals() {
 					<Panel title="⚠ Penalidades a cumprir" meta={`${penalties.length}`}>
 						<ul className="space-y-3">
 							{(allPenalties ? penalties : penalties.slice(0, LIMIT)).map((x) => (
-								<li key={x.id} className="flex items-center gap-3 text-[16px]">
-									<span className="min-w-0 flex-1"><span className="block truncate">{x.text || 'Penalidade'}</span><span className="text-[14px] text-muted-foreground">{x.goalTitle} · {fmtShort(x.date)} · {x.xp} XP</span></span>
+								<li key={x.id} className="flex items-center gap-3 text-[14px]">
+									<span className="min-w-0 flex-1"><span className="block truncate">{x.text || 'Penalidade'}</span><span className="text-[13px] text-muted-foreground">{x.goalTitle} · {fmtShort(x.date)} · {x.xp} XP</span></span>
 									<button className="px-btn" onClick={() => resolve(x.id)}>Cumprida</button>
 								</li>
 							))}
-							{penalties.length === 0 && <li className="text-[16px] text-muted-foreground">Nada pendente. Continue assim.</li>}
+							{penalties.length === 0 && <li className="text-[14px] text-muted-foreground">Nada pendente. Continue assim.</li>}
 							{penalties.length > LIMIT && (
 								<li><button className="px-btn" onClick={() => setAllPenalties((v) => !v)}>{allPenalties ? 'Ver menos' : `Ver todos (${penalties.length})`}</button></li>
 							)}
@@ -330,9 +329,9 @@ function Goals() {
 							return (
 								<li key={a.id} className={`px-box flex gap-3 p-3 ${on ? '' : 'opacity-45 grayscale'}`}>
 									<span className="text-[24px]" aria-hidden="true">{a.icon}</span>
-									<span className="min-w-0 text-[16px]">
+									<span className="min-w-0 text-[14px]">
 										<span className="block">{a.title} <span className="text-px-yellow">+{a.xp} XP</span></span>
-										<span className="block text-[14px] text-muted-foreground">{on ? `Desbloqueada em ${fmtShort(on)}` : a.desc}</span>
+										<span className="block text-[13px] text-muted-foreground">{on ? `Desbloqueada em ${fmtShort(on)}` : a.desc}</span>
 									</span>
 								</li>
 							)

@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState, type ReactNode } from 'react'
 import DraggableWidgetGrid from '@/components/ui/draggable-widget-grid'
 import { Bar, HEAT, Ready, brl, heatLevel, num, TONE_TEXT } from './bits'
-import { Hero, PixelIcon, RankBadge } from './pixel'
+import { Icon, LevelRing, RankBadge } from './badges'
 import {
 	addDays,
 	fmtShort,
@@ -46,8 +46,8 @@ function Tile({
 	return (
 		<section className="@container flex h-full flex-col gap-3 p-3 sm:p-4">
 			<header className="flex items-center justify-between gap-2 leading-none">
-				<h3 className="px-label truncate !text-[9px]">{title}</h3>
-				<Link href={href} className="shrink-0 text-[15px] text-muted-foreground hover:text-primary">
+				<h3 className="px-label truncate !text-[11px]">{title}</h3>
+				<Link href={href} className="shrink-0 text-[13px] text-muted-foreground hover:text-primary">
 					{meta ?? '▶'}
 				</Link>
 			</header>
@@ -59,12 +59,12 @@ function Tile({
 const Big = ({ children, unit }: { children: ReactNode; unit?: string }) => (
 	<p className="text-[32px] leading-none tabular-nums">
 		{children}
-		{unit && <span className="text-[16px] text-muted-foreground">{' '}{unit}</span>}
+		{unit && <span className="text-[14px] text-muted-foreground">{' '}{unit}</span>}
 	</p>
 )
 
 const Line = ({ label, value }: { label: ReactNode; value: ReactNode }) => (
-	<div className="flex items-center gap-2 text-[16px]">
+	<div className="flex items-center gap-2 text-[14px]">
 		<span className="min-w-0 truncate">{label}</span>
 		<span className="ml-auto text-muted-foreground tabular-nums">{value}</span>
 	</div>
@@ -97,7 +97,7 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 					<div className="flex items-center gap-4">
 						<RankBadge index={r.index} size={4} />
 						<div className="min-w-0">
-							<p className="font-display text-[14px] text-primary">{r.rank.label.toUpperCase()}</p>
+							<p className="font-display text-[20px] font-semibold">{r.rank.label}</p>
 							<p className="mt-1 text-[26px] leading-none tabular-nums">{num(xp)} XP</p>
 						</div>
 					</div>
@@ -116,15 +116,14 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 			return (
 				<Tile title="Nível" href="/metas">
 					<div className="flex items-end gap-3">
-						<Hero size={4} />
+						<LevelRing level={lv.level} pct={lv.pct} size={68} />
 						<div className="min-w-0">
-							<p className="font-display text-[14px]">Nv {lv.level}</p>
-							<p className="truncate text-[15px] text-muted-foreground">{lv.title}</p>
+							<p className="truncate text-[15px]">{lv.title}</p>
 						</div>
 					</div>
 					<div className="mt-auto space-y-1">
 						<Bar pct={lv.pct} tone="blue" />
-						<p className="text-[14px] text-muted-foreground tabular-nums">{lv.into}/{lv.span} XP</p>
+						<p className="text-[13px] text-muted-foreground tabular-nums">{lv.into}/{lv.span} XP</p>
 					</div>
 				</Tile>
 			)
@@ -134,10 +133,10 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 			return (
 				<Tile title="Sequência" href="/diario">
 					<div className="flex items-center gap-3 text-px-red">
-						<PixelIcon name="fogo" size={5} />
+						<Icon name="fogo" size={36} />
 						<span className="text-[40px] leading-none text-foreground tabular-nums">{st.current}</span>
 					</div>
-					<p className="mt-auto text-[15px] text-muted-foreground">
+					<p className="mt-auto text-[13px] text-muted-foreground">
 						dias seguidos · melhor {st.best}
 					</p>
 				</Tile>
@@ -150,15 +149,15 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 				<Tile title="Missões do dia" href="/metas" meta={`${done}/${q.length}`}>
 					<ul className="grid flex-1 grid-cols-2 content-start gap-x-4 gap-y-1.5">
 						{q.map((x) => (
-							<li key={x.id} className="flex items-center gap-2 text-[16px]">
-								<span className={`inline-flex size-5 shrink-0 items-center justify-center border-4 border-border ${x.done ? 'bg-px-green text-background' : ''}`}>
-									{x.done && <PixelIcon name="check" size={1} />}
+							<li key={x.id} className="flex items-center gap-2 text-[14px]">
+								<span className={`inline-flex size-5 shrink-0 items-center justify-center rounded-md border border-border ${x.done ? 'bg-px-green text-background' : ''}`}>
+									{x.done && <Icon name="check" size={12} />}
 								</span>
 								<span className={`truncate ${x.done ? 'text-muted-foreground line-through' : ''}`}>{x.label}</span>
 							</li>
 						))}
 					</ul>
-					<p className={`text-[15px] ${done >= QUEST_MIN ? 'text-px-green' : 'text-muted-foreground'}`}>
+					<p className={`text-[13px] ${done >= QUEST_MIN ? 'text-px-green' : 'text-muted-foreground'}`}>
 						{done >= QUEST_MIN ? `★ Bônus de +${s.settings.xp.quest} XP garantido!` : `Faça ${QUEST_MIN} para ganhar +${s.settings.xp.quest} XP`}
 					</p>
 				</Tile>
@@ -181,11 +180,11 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 								<span
 									key={d}
 									title={`${fmtShort(d)} · ${by.get(d) ?? 0} registros`}
-									className={`h-3.5 ${d === now ? 'outline-2 outline-foreground' : ''} ${HEAT[heatLevel(by.get(d) ?? 0)]}`}
+									className={`h-3.5 rounded-[3px] ${d === now ? 'outline-2 outline-foreground' : ''} ${HEAT[heatLevel(by.get(d) ?? 0)]}`}
 								/>
 							))}
 						</div>
-						<p className="truncate text-[15px] text-muted-foreground">
+						<p className="truncate text-[13px] text-muted-foreground">
 							{last ? `${fmtShort(last.date)} ${last.time} · ${last.text}` : 'Nenhuma anotação ainda.'}
 						</p>
 					</div>
@@ -196,7 +195,7 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 			const goals = s.goals.filter((g) => g.active).slice(0, 7)
 			return (
 				<Tile title="Metas" href="/metas">
-					{goals.length === 0 && <p className="text-[16px] text-muted-foreground">Nenhuma meta ativa.</p>}
+					{goals.length === 0 && <p className="text-[14px] text-muted-foreground">Nenhuma meta ativa.</p>}
 					<ul className="flex flex-1 flex-col justify-between gap-2">
 						{goals.map((g) => {
 							const p = goalProgress(g, s, now)
@@ -238,7 +237,7 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 					<Big unit={goal ? `/ ${goal.target}` : 'na semana'}>{n}</Big>
 					<div className="mt-auto flex gap-[3px]">
 						{Array.from({ length: 7 }, (_, i) => addDays(week.from, i)).map((d) => (
-							<span key={d} title={fmtShort(d)} className={`h-5 flex-1 ${s.workouts.some((w) => w.date === d) ? 'bg-px-blue' : 'bg-foreground/10'}`} />
+							<span key={d} title={fmtShort(d)} className={`h-5 flex-1 rounded-[3px] ${s.workouts.some((w) => w.date === d) ? 'bg-px-blue' : 'bg-foreground/10'}`} />
 						))}
 					</div>
 				</Tile>
@@ -250,7 +249,7 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 			return (
 				<Tile title="Leitura" href="/leitura">
 					<Big unit="págs">{num(pages)}</Big>
-					<p className="mt-auto truncate text-[15px] text-muted-foreground">{book ? `Lendo: ${book.title}` : 'esta semana'}</p>
+					<p className="mt-auto truncate text-[13px] text-muted-foreground">{book ? `Lendo: ${book.title}` : 'esta semana'}</p>
 				</Tile>
 			)
 		}
@@ -260,7 +259,7 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 			return (
 				<Tile title="Projetos" href="/projetos">
 					<Big unit="tarefas">{done}</Big>
-					<p className="mt-auto text-[15px] text-muted-foreground">{active} ativo{active === 1 ? '' : 's'}</p>
+					<p className="mt-auto text-[13px] text-muted-foreground">{active} ativo{active === 1 ? '' : 's'}</p>
 				</Tile>
 			)
 		}
@@ -270,7 +269,7 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 			return (
 				<Tile title="Conteúdo" href="/conteudo">
 					<Big unit="posts">{posted}</Big>
-					<p className="mt-auto text-[15px] text-muted-foreground">{ideas} ideia{ideas === 1 ? '' : 's'} na fila</p>
+					<p className="mt-auto text-[13px] text-muted-foreground">{ideas} ideia{ideas === 1 ? '' : 's'} na fila</p>
 				</Tile>
 			)
 		}
@@ -286,11 +285,11 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 					</div>
 					<ul className="mt-auto space-y-1">
 						{rows.map(({ x, tag }) => (
-							<li key={x.id} className="truncate text-[16px]">
+							<li key={x.id} className="truncate text-[14px]">
 								<span className={tag === '★' ? 'text-px-yellow' : 'text-px-red'}>{tag}</span> {x.text || x.goalTitle}
 							</li>
 						))}
-						{rows.length === 0 && <li className="text-[16px] text-muted-foreground">Cumpra metas para ganhar prêmios.</li>}
+						{rows.length === 0 && <li className="text-[14px] text-muted-foreground">Cumpra metas para ganhar prêmios.</li>}
 					</ul>
 				</Tile>
 			)
@@ -320,7 +319,7 @@ function QuickLog() {
 				onChange={(e) => setText(e.target.value)}
 				placeholder="O que você fez agora? (Enter para anotar)"
 				aria-label="O que você fez agora"
-				className="px-input h-11 min-w-[220px] flex-1 text-[18px]"
+				className="px-input h-11 min-w-[220px] flex-1 text-[16px]"
 			/>
 			<select value={area} onChange={(e) => setArea(e.target.value as Area)} aria-label="Área" className="px-input h-11">
 				{AREAS.map((a) => (
@@ -348,7 +347,7 @@ function QuickActions({ s }: { s: AppState }) {
 					const m = Number(ask('Quantos minutos de treino?', '60'))
 					if (m > 0) addItem('workouts', { date: today(), group: s.settings.workoutGroups[0] ?? 'Treino', minutes: m, notes: '', weight: 0 })
 				}}>
-				<PixelIcon name="academia" /> Treinei
+				<Icon name="academia" /> Treinei
 			</button>
 			<button
 				className="px-btn"
@@ -357,7 +356,7 @@ function QuickActions({ s }: { s: AppState }) {
 					const p = Number(ask(`Páginas lidas de "${book.title}"?`, '10'))
 					if (p > 0) addItem('readings', { date: today(), bookId: book.id, pages: p })
 				}}>
-				<PixelIcon name="leitura" /> Li páginas
+				<Icon name="leitura" /> Li páginas
 			</button>
 			<button
 				className="px-btn"
@@ -365,7 +364,7 @@ function QuickActions({ s }: { s: AppState }) {
 					const v = Number((ask('Valor do gasto (R$)?') ?? '').replace(',', '.'))
 					if (v > 0) addItem('txs', { date: today(), type: 'gasto', category: s.settings.financeCategories[0] ?? 'Outros', desc: ask('Descrição?') ?? '', amount: v })
 				}}>
-				<PixelIcon name="financas" /> Gasto
+				<Icon name="financas" /> Gasto
 			</button>
 			<button
 				className="px-btn"
@@ -373,7 +372,7 @@ function QuickActions({ s }: { s: AppState }) {
 					const t = ask('Título do conteúdo postado?')
 					if (t?.trim()) addItem('posts', { date: today(), platform: s.settings.platforms[0] ?? 'Outro', title: t.trim(), status: 'Postado' })
 				}}>
-				<PixelIcon name="conteudo" /> Postei
+				<Icon name="conteudo" /> Postei
 			</button>
 		</div>
 	)
@@ -395,7 +394,7 @@ function Board() {
 			<QuickLog />
 			<QuickActions s={s} />
 			<div className="mb-4 flex items-center justify-between gap-3">
-				<p className="text-[16px] text-muted-foreground">
+				<p className="text-[14px] text-muted-foreground">
 					{editable ? 'Arraste os blocos para reorganizar. Alt + setas no teclado.' : 'Clique no ▶ de um bloco para abrir a seção.'}
 				</p>
 				<button className={editable ? 'px-btn-primary' : 'px-btn'} onClick={() => setEditable((v) => !v)}>
@@ -406,8 +405,8 @@ function Board() {
 				key={hidden.join(',')}
 				items={items}
 				editable={editable}
-				radius={0}
-				gap={14}
+				radius={20}
+				gap={16}
 				onChange={(next) => mutate((st) => ({ ...st, layout: next.map((i) => i.id) }))}
 				renderItem={(item) => <Widgets s={s} kind={item.id} />}
 			/>

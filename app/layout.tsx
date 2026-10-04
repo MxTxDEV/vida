@@ -1,17 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { DotGothic16, Press_Start_2P } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import { Shell } from "@/components/shell";
 import "./globals.css";
 
-const title = Press_Start_2P({
-  variable: "--font-pixel-title",
-  weight: "400",
+const display = Space_Grotesk({
+  variable: "--font-display",
   subsets: ["latin"],
 });
 
-const body = DotGothic16({
-  variable: "--font-pixel-body",
-  weight: "400",
+const body = Inter({
+  variable: "--font-body",
   subsets: ["latin"],
 });
 
@@ -21,12 +19,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#120c2e",
+  themeColor: "#0b0d12",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${title.variable} ${body.variable} h-full`}>
+    <html lang="pt-BR" className={`${display.variable} ${body.variable} h-full`}>
       <body className="min-h-full">
         <Shell>{children}</Shell>
       </body>

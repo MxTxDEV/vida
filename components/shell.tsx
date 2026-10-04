@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { AccountMenu } from './account'
-import { PixelIcon, RankBadge } from './pixel'
+import { Icon, RankBadge } from './badges'
 import { levelInfo, rankFor, seasonRange, syncGame, xpBreakdown } from '@/lib/game'
 import { exportData, importData, mutate, resetData, useApp } from '@/lib/store'
 import { initSync } from '@/lib/sync'
@@ -94,7 +94,7 @@ export function Shell({ children }: { children: ReactNode }) {
 			<div className="mx-auto w-full max-w-[1180px] px-4 py-6">
 				<div className="mb-6 flex flex-wrap items-center justify-between gap-3">
 					<div className="flex flex-wrap items-center gap-3">
-						<span className="font-display text-[18px] tracking-[0.15em] text-primary">VIDA</span>
+						<span className="font-display text-[20px] font-semibold tracking-[0.25em]">VIDA</span>
 						{state.ready && (
 							<Link href="/metas" className="px-chip hover:brightness-125" title="Ranking do mês e nível vitalício">
 								<RankBadge index={rank.index} size={2} />
@@ -114,7 +114,7 @@ export function Shell({ children }: { children: ReactNode }) {
 						const active = n.href === '/' ? path === '/' : path.startsWith(n.href)
 						return (
 							<Link key={n.href} href={n.href} aria-current={active ? 'page' : undefined} className="px-btn shrink-0">
-								<PixelIcon name={n.icon} />
+								<Icon name={n.icon} />
 								{n.label}
 							</Link>
 						)
