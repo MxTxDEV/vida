@@ -120,6 +120,8 @@ export interface Settlement {
 
 export interface AppState {
 	ready: boolean
+	/** Time of the last local edit (ms). Decides which copy wins when syncing. */
+	updatedAt: number
 	logs: LogEntry[]
 	txs: Tx[]
 	workouts: Workout[]

@@ -7,6 +7,7 @@ const KEY = 'vida:v1'
 
 const blank = (): AppState => ({
 	ready: false,
+	updatedAt: 0,
 	logs: [],
 	txs: [],
 	workouts: [],
@@ -27,6 +28,7 @@ const SERVER: AppState = { ...blank(), goals: [] }
 let state: AppState = SERVER
 let loaded = false
 const listeners = new Set<() => void>()
+const changeHooks = new Set<() => void>()
 
 function merge(raw: unknown): AppState {
 	const base = blank()
@@ -74,13 +76,35 @@ function subscribe(fn: () => void) {
 
 export const useApp = () => useSyncExternalStore(subscribe, getSnapshot, () => SERVER)
 
+/** Writes `next`, saves it and tells React. Local edits also reach sync. */
+function commit(next: AppState, local: boolean) {
+	state = { ...next, ready: true, updatedAt: local ? Date.now() : next.updatedAt }
+	persist()
+	listeners.forEach((l) => l())
+	if (local) changeHooks.forEach((h) => h())
+}
+
 export function mutate(fn: (s: AppState) => AppState) {
 	if (!loaded) load()
 	const next = fn(state)
 	if (next === state) return
-	state = { ...next, ready: true }
-	persist()
-	listeners.forEach((l) => l())
+	commit(next, true)
+}
+
+export const getState = () => getSnapshot()
+
+/** Called after every local edit (not after data arriving from the cloud). */
+export function onLocalChange(fn: () => void) {
+	changeHooks.add(fn)
+	return () => {
+		changeHooks.delete(fn)
+	}
+}
+
+/** Replaces the data with a copy from the cloud. */
+export function applyRemote(raw: unknown) {
+	if (!loaded) load()
+	commit(merge(raw), false)
 }
 
 type Item<K extends CollKey> = AppState[K][number]
@@ -107,13 +131,9 @@ export function exportData() {
 }
 
 export function importData(json: string) {
-	state = merge(JSON.parse(json))
-	persist()
-	listeners.forEach((l) => l())
+	commit(merge(JSON.parse(json)), true)
 }
 
 export function resetData() {
-	state = { ...blank(), ready: true }
-	persist()
-	listeners.forEach((l) => l())
+	commit({ ...blank(), ready: true }, true)
 }

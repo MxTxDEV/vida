@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { button } from './bits'
+import { AccountMenu } from './account'
+import { initSync } from '@/lib/sync'
 import { levelInfo, syncGame, xpBreakdown } from '@/lib/game'
 import { exportData, importData, mutate, resetData, useApp } from '@/lib/store'
 
@@ -85,6 +87,10 @@ export function Shell({ children }: { children: ReactNode }) {
 	const path = usePathname()
 	const state = useApp()
 
+	useEffect(() => {
+		initSync()
+	}, [])
+
 	// Close finished goal periods and unlock achievements as data changes.
 	useEffect(() => {
 		if (state.ready) mutate((s) => syncGame(s))
@@ -109,7 +115,10 @@ export function Shell({ children }: { children: ReactNode }) {
 							</Link>
 						)}
 					</div>
-					<DataMenu />
+					<div className="flex items-center gap-2">
+						<AccountMenu />
+						<DataMenu />
+					</div>
 				</div>
 				<nav aria-label="Seções" className="-mx-1 mb-8 flex gap-1 overflow-x-auto px-1 pb-1">
 					{NAV.map((n) => {
