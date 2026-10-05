@@ -1,17 +1,23 @@
 import { useSyncExternalStore } from 'react'
 import { getSupabase } from './supabase'
-import { applyRemote, getState, onLocalChange } from './store'
+import { clearProfile, loadProfile } from './social'
+import { applyRemote, getState, onLocalChange, wipeLocal } from './store'
 
 export type SyncStatus = 'off' | 'signed-out' | 'idle' | 'syncing' | 'offline' | 'error'
 
 interface Info {
 	status: SyncStatus
 	email: string | null
+	userId: string | null
 	lastSync: number
 	error: string
+	/** True until Supabase has told us whether someone is signed in. */
+	loading: boolean
+	/** Arrived from a password-reset e-mail. */
+	recovery: boolean
 }
 
-const SERVER: Info = { status: 'off', email: null, lastSync: 0, error: '' }
+const SERVER: Info = { status: 'off', email: null, userId: null, lastSync: 0, error: '', loading: true, recovery: false }
 let info: Info = SERVER
 const subs = new Set<() => void>()
 
@@ -135,18 +141,31 @@ export function initSync() {
 	started = true
 	setInfo({ status: 'signed-out' })
 
-	sb.auth.onAuthStateChange((_event, session) => {
+	sb.auth.onAuthStateChange((event, session) => {
+		if (event === 'PASSWORD_RECOVERY') setInfo({ recovery: true })
 		const next = session?.user.id ?? null
-		if (next === userId && next !== null) return
+		if (next === userId && next !== null) return setInfo({ loading: false })
 		stopListening()
 		userId = next
-		setInfo({ email: session?.user.email ?? null, status: next ? 'syncing' : 'signed-out', error: '' })
+		setInfo({
+			email: session?.user.email ?? null,
+			userId: next,
+			loading: false,
+			status: next ? 'syncing' : 'signed-out',
+			error: '',
+		})
 		// Do not call Supabase from inside this callback.
 		if (next)
 			setTimeout(() => {
 				void pull(true)
 				listen()
+				void loadProfile(next)
 			}, 0)
+		else {
+			clearProfile()
+			// Someone else may sign in on this device next: leave nothing behind.
+			if (event === 'SIGNED_OUT') wipeLocal()
+		}
 	})
 
 	onLocalChange(() => {
@@ -168,13 +187,34 @@ export async function signIn(email: string, password: string) {
 	return error?.message ?? null
 }
 
-export async function signUp(email: string, password: string) {
-	const { data, error } = await getSupabase()!.auth.signUp({ email, password })
+/** Creates the account. The username is turned into a public profile by the database. */
+export async function signUp(email: string, password: string, username: string) {
+	const sb = getSupabase()!
+	const { data, error } = await sb.auth.signUp({ email, password, options: { data: { username } } })
 	if (error) return error.message
 	return data.session ? null : 'Confirme seu e-mail (veja a caixa de entrada) e depois entre.'
 }
 
+export async function usernameAvailable(username: string) {
+	const { data, error } = await getSupabase()!.rpc('username_available', { u: username })
+	// If the database is not prepared yet, let the sign-up continue.
+	return error ? true : Boolean(data)
+}
+
+export async function resetPassword(email: string) {
+	const { error } = await getSupabase()!.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
+	return error?.message ?? null
+}
+
+export async function updatePassword(password: string) {
+	const { error } = await getSupabase()!.auth.updateUser({ password })
+	if (!error) setInfo({ recovery: false })
+	return error?.message ?? null
+}
+
 export async function signOut() {
 	window.clearTimeout(timer)
+	// Send anything still waiting before this device is cleared.
+	await push()
 	await getSupabase()?.auth.signOut()
 }

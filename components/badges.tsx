@@ -4,6 +4,14 @@ import { useId } from 'react'
 import {
 	Check,
 	Clapperboard,
+	Flag,
+	Heart,
+	Medal,
+	MessageCircle,
+	ShieldCheck,
+	Trash2,
+	UserRound,
+	Users,
 	Dumbbell,
 	Flame,
 	LayoutDashboard,
@@ -82,6 +90,14 @@ const ICONS: Record<string, LucideIcon> = {
 	fogo: Flame,
 	estrela: Star,
 	check: Check,
+	comunidade: Users,
+	ranking: Medal,
+	admin: ShieldCheck,
+	perfil: UserRound,
+	curtir: Heart,
+	comentar: MessageCircle,
+	denunciar: Flag,
+	lixeira: Trash2,
 }
 
 export function Icon({ name, size = 16 }: { name: string; size?: number }) {

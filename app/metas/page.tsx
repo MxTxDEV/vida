@@ -1,6 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { ShareButton } from '@/components/social-ui'
+import { useMe } from '@/lib/social'
+import { syncConfigured } from '@/lib/supabase'
 import { Bar, Bars, PageHeader, Panel, Ready, TONE_TEXT, brl, num } from '@/components/bits'
 import { Icon, LevelRing, RankBadge } from '@/components/badges'
 import { fmtShort, monthEnd, today } from '@/lib/dates'
@@ -168,6 +171,8 @@ const monthName = (m: string) => new Date(`${m}T12:00:00`).toLocaleDateString('p
 
 function Goals() {
 	const s = useApp()
+	const { profile } = useMe()
+	const canShare = syncConfigured && Boolean(profile) && !profile?.suspended
 	const now = today()
 	const life = xpBreakdown(s)
 	const range = seasonRange(now)
@@ -212,6 +217,11 @@ function Goals() {
 										{r.next ? `Faltam ${num(r.next.at - season.total)} XP para ${r.next.rank.label}` : 'Você está no rank máximo!'}
 									</p>
 								</div>
+								{canShare && (
+									<div className="mt-3">
+										<ShareButton kind="rank" text={`Estou no rank ${r.rank.label} este mês, com ${num(season.total)} XP!`} />
+									</div>
+								)}
 							</div>
 						</div>
 						<ul className="mt-5 grid grid-cols-5 gap-2 text-center">
@@ -332,6 +342,11 @@ function Goals() {
 									<span className="min-w-0 text-[14px]">
 										<span className="block">{a.title} <span className="text-px-yellow">+{a.xp} XP</span></span>
 										<span className="block text-[13px] text-muted-foreground">{on ? `Desbloqueada em ${fmtShort(on)}` : a.desc}</span>
+										{on && canShare && (
+											<span className="mt-2 block">
+												<ShareButton kind="conquista" text={`Conquista desbloqueada: ${a.title}! (+${a.xp} XP)`} />
+											</span>
+										)}
 									</span>
 								</li>
 							)

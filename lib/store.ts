@@ -138,6 +138,11 @@ export function importData(json: string) {
 	commit(merge(JSON.parse(json)), true)
 }
 
+/** Clears this device after sign-out, without syncing the empty copy. */
+export function wipeLocal() {
+	commit({ ...blank(), ready: true }, false)
+}
+
 export function resetData() {
 	commit({ ...blank(), ready: true }, true)
 }

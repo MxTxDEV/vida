@@ -4,10 +4,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { AccountMenu } from './account'
+import { Loading, LoginScreen, RecoveryScreen, SetupScreen, SuspendedScreen } from './auth'
 import { Icon, RankBadge } from './badges'
 import { levelInfo, rankFor, seasonRange, syncGame, xpBreakdown } from '@/lib/game'
 import { exportData, importData, mutate, resetData, useApp } from '@/lib/store'
-import { initSync } from '@/lib/sync'
+import { isStaff, useMe } from '@/lib/social'
+import { publishStats } from '@/lib/stats'
+import { syncConfigured } from '@/lib/supabase'
+import { initSync, useSync } from '@/lib/sync'
 
 const NAV = [
 	{ href: '/', label: 'Painel', icon: 'painel' },
@@ -19,6 +23,12 @@ const NAV = [
 	{ href: '/conteudo', label: 'Conteúdo', icon: 'conteudo' },
 	{ href: '/metas', label: 'Metas', icon: 'metas' },
 	{ href: '/opcoes', label: 'Opções', icon: 'opcoes' },
+]
+
+/** Community pages, shown once the person is signed in. */
+const SOCIAL = [
+	{ href: '/social', label: 'Comunidade', icon: 'comunidade' },
+	{ href: '/ranking', label: 'Ranking', icon: 'ranking' },
 ]
 
 function DataMenu() {
@@ -74,10 +84,19 @@ function DataMenu() {
 export function Shell({ children }: { children: ReactNode }) {
 	const path = usePathname()
 	const state = useApp()
+	const sync = useSync()
+	const me = useMe()
 
 	useEffect(() => {
 		initSync()
 	}, [])
+
+	// Share only the public numbers (level, monthly rank, streak).
+	useEffect(() => {
+		if (!state.ready || !sync.userId || me.status !== 'ready' || me.profile?.suspended) return
+		const t = window.setTimeout(() => void publishStats(sync.userId!, state), 3000)
+		return () => window.clearTimeout(t)
+	}, [state, sync.userId, me.status, me.profile?.suspended])
 
 	// Close finished goal periods and unlock achievements as data changes.
 	useEffect(() => {
@@ -89,10 +108,26 @@ export function Shell({ children }: { children: ReactNode }) {
 	const lv = levelInfo(life)
 	const rank = rankFor(monthXp, state.settings.tiers)
 
+	// Signed-out visitors only see the sign-in screen.
+	let gate: ReactNode = null
+	if (syncConfigured) {
+		if (sync.loading || !state.ready) gate = <Loading />
+		else if (sync.recovery) gate = <RecoveryScreen />
+		else if (!sync.userId) gate = <LoginScreen />
+		else if (me.status === 'idle' || me.status === 'loading') gate = <Loading />
+		else if (me.status === 'error') gate = <SetupScreen detail={me.error} />
+		else if (me.profile?.suspended) gate = <SuspendedScreen />
+	}
+	const social = syncConfigured && !gate
+	const links = [...NAV, ...(social ? SOCIAL : []), ...(social && isStaff(me.profile) ? [{ href: '/admin', label: 'Admin', icon: 'admin' }] : [])]
+
 	return (
 		<div data-theme={state.settings.theme} className="min-h-screen w-full bg-background text-foreground">
 			{/* Fixed layer: the grid and glow stay still while the page scrolls. */}
 			<div aria-hidden="true" className="bg-grid pointer-events-none fixed inset-0 z-0" />
+			{gate ? (
+				<div className="relative z-10">{gate}</div>
+			) : (
 			<div className="relative z-10 mx-auto w-full max-w-[1180px] px-4 py-6">
 				<div className="mb-6 flex flex-wrap items-center justify-between gap-3">
 					<div className="flex flex-wrap items-center gap-3">
@@ -112,7 +147,7 @@ export function Shell({ children }: { children: ReactNode }) {
 					</div>
 				</div>
 				<nav aria-label="Seções" className="-mx-1 mb-8 flex gap-2 overflow-x-auto px-1 pb-2">
-					{NAV.map((n) => {
+					{links.map((n) => {
 						const active = n.href === '/' ? path === '/' : path.startsWith(n.href)
 						return (
 							<Link key={n.href} href={n.href} aria-current={active ? 'page' : undefined} className="px-btn shrink-0">
@@ -124,6 +159,7 @@ export function Shell({ children }: { children: ReactNode }) {
 				</nav>
 				<main>{children}</main>
 			</div>
+			)}
 		</div>
 	)
 }
