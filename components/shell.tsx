@@ -90,8 +90,10 @@ export function Shell({ children }: { children: ReactNode }) {
 	const rank = rankFor(monthXp, state.settings.tiers)
 
 	return (
-		<div data-theme={state.settings.theme} className="bg-grid min-h-screen w-full bg-background text-foreground">
-			<div className="mx-auto w-full max-w-[1180px] px-4 py-6">
+		<div data-theme={state.settings.theme} className="min-h-screen w-full bg-background text-foreground">
+			{/* Fixed layer: the grid and glow stay still while the page scrolls. */}
+			<div aria-hidden="true" className="bg-grid pointer-events-none fixed inset-0 z-0" />
+			<div className="relative z-10 mx-auto w-full max-w-[1180px] px-4 py-6">
 				<div className="mb-6 flex flex-wrap items-center justify-between gap-3">
 					<div className="flex flex-wrap items-center gap-3">
 						<span className="font-display text-[20px] font-semibold tracking-[0.25em]">VIDA</span>
