@@ -102,9 +102,24 @@ export function LoginScreen() {
 					void submit()
 				}}>
 				{mode === 'up' && (
-					<Field label="Nome de usuário" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} autoComplete="username" placeholder="ex.: joao_silva" maxLength={20} required />
+					<div className="grid gap-1.5">
+						<Field
+							label="Nome de usuário"
+							name="vida-nome-de-usuario"
+							value={username}
+							onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+							autoComplete="off"
+							autoCapitalize="none"
+							autoCorrect="off"
+							spellCheck={false}
+							placeholder="ex.: joao_silva"
+							maxLength={20}
+							required
+						/>
+						<span className="text-[12px] text-muted-foreground">Como as pessoas vão te ver. Só letras minúsculas, números e _ (3 a 20). Não é o e-mail.</span>
+					</div>
 				)}
-				<Field label="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
+				<Field label="E-mail" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
 				{mode !== 'forgot' && (
 					<Field label="Senha" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'up' ? 'new-password' : 'current-password'} minLength={6} required />
 				)}
