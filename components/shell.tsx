@@ -119,7 +119,15 @@ export function Shell({ children }: { children: ReactNode }) {
 		else if (me.profile?.suspended) gate = <SuspendedScreen />
 	}
 	const social = syncConfigured && !gate
-	const links = [...NAV, ...(social ? SOCIAL : []), ...(social && isStaff(me.profile) ? [{ href: '/admin', label: 'Admin', icon: 'admin' }] : [])]
+	// With accounts, the community comes first and the personal dashboard moves to /painel.
+	const links = social
+		? [
+				...SOCIAL,
+				{ ...NAV[0], href: '/painel' },
+				...NAV.slice(1),
+				...(isStaff(me.profile) ? [{ href: '/admin', label: 'Admin', icon: 'admin' }] : []),
+			]
+		: NAV
 
 	return (
 		<div data-theme={state.settings.theme} className="min-h-screen w-full bg-background text-foreground">
@@ -131,7 +139,7 @@ export function Shell({ children }: { children: ReactNode }) {
 			<div className="relative z-10 mx-auto w-full max-w-[1180px] px-4 py-6">
 				<div className="mb-6 flex flex-wrap items-center justify-between gap-3">
 					<div className="flex flex-wrap items-center gap-3">
-						<span className="font-display text-[20px] font-semibold tracking-[0.25em]">VIDA</span>
+						<Link href={social ? '/social' : '/'} className="font-display text-[20px] font-semibold tracking-[0.25em]">VIDA</Link>
 						{state.ready && (
 							<Link href="/metas" className="px-chip hover:brightness-125" title="Ranking do mês e nível vitalício">
 								<RankBadge index={rank.index} size={2} />
