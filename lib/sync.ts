@@ -190,8 +190,10 @@ export function friendlyAuthError(message: string) {
 	if (m.includes('already registered') || m.includes('already been registered')) return 'Este e-mail já tem conta. Volte e use "Entrar" (ou "Esqueci a senha").'
 	if (m.includes('rate limit') || m.includes('too many') || m.includes('security purposes'))
 		return 'Muitas tentativas ou e-mails enviados em pouco tempo. Aguarde alguns minutos e tente de novo.'
+	if (m.includes('email signups are disabled') || m.includes('email_provider_disabled') || m.includes('provider is not enabled'))
+		return `O provedor de E-mail está desligado no Supabase. Ligue em Authentication > Sign In / Providers > Email > Enable Email provider, e salve. (Supabase: ${message})`
 	if (m.includes('signups not allowed') || m.includes('signup is disabled') || m.includes('signups are disabled'))
-		return 'Novos cadastros estão desativados no Supabase (Authentication > Sign In / Providers > Allow new users to sign up).'
+		return `Novos cadastros estão desativados no Supabase. Ligue "Allow new users to sign up" em Authentication > Sign In / Providers, e salve. (Supabase: ${message})`
 	if (m.includes('database error saving new user'))
 		return 'O banco recusou criar o perfil. Rode o arquivo supabase/social.sql inteiro no SQL Editor e tente de novo.'
 	if (m.includes('failed to fetch') || m.includes('networkerror') || m.includes('load failed'))
