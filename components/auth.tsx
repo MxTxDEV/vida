@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from 'react'
 import { loadProfile, USERNAME_RE } from '@/lib/social'
-import { resetPassword, signIn, signOut, signUp, updatePassword, useSync, usernameAvailable } from '@/lib/sync'
+import { friendlyAuthError, resetPassword, signIn, signOut, signUp, updatePassword, useSync, usernameAvailable } from '@/lib/sync'
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
 	return (
@@ -53,6 +53,15 @@ export function LoginScreen() {
 	}
 
 	const submit = async () => {
+		try {
+			await run()
+		} catch (e) {
+			setBusy(false)
+			setMsg(friendlyAuthError(String(e)))
+		}
+	}
+
+	const run = async () => {
 		setMsg('')
 		setInfo('')
 		const mail = email.trim()
@@ -60,7 +69,7 @@ export function LoginScreen() {
 			setBusy(true)
 			const err = await resetPassword(mail)
 			setBusy(false)
-			return err ? setMsg(err) : setInfo('Enviamos um link para o seu e-mail. Abra-o neste aparelho para criar uma nova senha.')
+			return err ? setMsg(friendlyAuthError(err)) : setInfo('Enviamos um link para o seu e-mail. Abra-o neste aparelho para criar uma nova senha.')
 		}
 		if (mode === 'up') {
 			const u = username.trim().toLowerCase()
@@ -72,14 +81,16 @@ export function LoginScreen() {
 				setBusy(false)
 				return setMsg('Esse nome de usuário já está em uso.')
 			}
-			const err = await signUp(mail, password, u)
+			const res = await signUp(mail, password, u)
 			setBusy(false)
-			return err && setInfo(err)
+			if (res.error) return setMsg(res.error)
+			if (res.notice) setInfo(res.notice)
+			return
 		}
 		setBusy(true)
 		const err = await signIn(mail, password)
 		setBusy(false)
-		if (err) setMsg(err === 'Invalid login credentials' ? 'E-mail ou senha incorretos.' : err)
+		if (err) setMsg(err)
 	}
 
 	return (

@@ -182,23 +182,60 @@ export function initSync() {
 	window.addEventListener('focus', refresh)
 }
 
-export async function signIn(email: string, password: string) {
-	const { error } = await getSupabase()!.auth.signInWithPassword({ email, password })
-	return error?.message ?? null
+/** Turns the most common Supabase messages into something actionable. */
+export function friendlyAuthError(message: string) {
+	const m = message.toLowerCase()
+	if (m.includes('invalid login credentials')) return 'E-mail ou senha incorretos. Se você esqueceu, use "Esqueci a senha".'
+	if (m.includes('email not confirmed')) return 'Seu e-mail ainda não foi confirmado. Abra o e-mail que enviamos e clique no link (veja também o spam).'
+	if (m.includes('already registered') || m.includes('already been registered')) return 'Este e-mail já tem conta. Volte e use "Entrar" (ou "Esqueci a senha").'
+	if (m.includes('rate limit') || m.includes('too many') || m.includes('security purposes'))
+		return 'Muitas tentativas ou e-mails enviados em pouco tempo. Aguarde alguns minutos e tente de novo.'
+	if (m.includes('signups not allowed') || m.includes('signup is disabled') || m.includes('signups are disabled'))
+		return 'Novos cadastros estão desativados no Supabase (Authentication > Sign In / Providers > Allow new users to sign up).'
+	if (m.includes('database error saving new user'))
+		return 'O banco recusou criar o perfil. Rode o arquivo supabase/social.sql inteiro no SQL Editor e tente de novo.'
+	if (m.includes('failed to fetch') || m.includes('networkerror') || m.includes('load failed'))
+		return 'Sem conexão com o servidor. Confira sua internet e tente de novo.'
+	if (m.includes('invalid api key') || m.includes('apikey')) return 'Chave do Supabase inválida na Vercel. Confira NEXT_PUBLIC_SUPABASE_ANON_KEY.'
+	if (m.includes('password')) return `Senha recusada: ${message}`
+	return message
 }
 
-/** Creates the account. The username is turned into a public profile by the database. */
-export async function signUp(email: string, password: string, username: string) {
-	const sb = getSupabase()!
-	const { data, error } = await sb.auth.signUp({ email, password, options: { data: { username } } })
-	if (error) return error.message
-	return data.session ? null : 'Confirme seu e-mail (veja a caixa de entrada) e depois entre.'
+export async function signIn(email: string, password: string) {
+	try {
+		const { error } = await getSupabase()!.auth.signInWithPassword({ email, password })
+		return error ? friendlyAuthError(error.message) : null
+	} catch (e) {
+		return friendlyAuthError(String(e))
+	}
+}
+
+/**
+ * Creates the account. The username is turned into a public profile by the
+ * database. Returns an error, or a notice when the e-mail must be confirmed.
+ */
+export async function signUp(email: string, password: string, username: string): Promise<{ error?: string; notice?: string }> {
+	try {
+		const { data, error } = await getSupabase()!.auth.signUp({ email, password, options: { data: { username } } })
+		if (error) return { error: friendlyAuthError(error.message) }
+		// Supabase hides existing accounts: no error, but the user has no identities.
+		if (data.user && data.user.identities?.length === 0)
+			return { error: friendlyAuthError('already registered') }
+		if (!data.session) return { notice: 'Conta criada! Enviamos um e-mail de confirmação: abra-o e clique no link, depois volte e entre. Veja também a caixa de spam.' }
+		return {}
+	} catch (e) {
+		return { error: friendlyAuthError(String(e)) }
+	}
 }
 
 export async function usernameAvailable(username: string) {
-	const { data, error } = await getSupabase()!.rpc('username_available', { u: username })
-	// If the database is not prepared yet, let the sign-up continue.
-	return error ? true : Boolean(data)
+	try {
+		const { data, error } = await getSupabase()!.rpc('username_available', { u: username })
+		// If the database is not prepared yet, let the sign-up continue.
+		return error ? true : Boolean(data)
+	} catch {
+		return true
+	}
 }
 
 export async function resetPassword(email: string) {
