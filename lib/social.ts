@@ -167,6 +167,8 @@ export async function fetchPosts(opts: {
 	me: string
 	scope: 'all' | 'following' | 'user' | 'recent'
 	userId?: string
+	/** Only posts containing this hashtag (without the #). */
+	tag?: string
 	staff?: boolean
 	limit?: number
 }): Promise<{ posts: Post[]; error: string }> {
@@ -175,10 +177,10 @@ export async function fetchPosts(opts: {
 	let q = sb.from('posts').select(POST_SELECT).order('created_at', { ascending: false }).limit(opts.limit ?? 50)
 	if (opts.scope === 'user' && opts.userId) q = q.eq('user_id', opts.userId)
 	if (opts.scope === 'following') {
-		const ids = await fetchFollowing(opts.me)
-		if (ids.length === 0) return { posts: [], error: '' }
-		q = q.in('user_id', ids)
+		// Like the old Twitter home: the people you follow, plus yourself.
+		q = q.in('user_id', [...(await fetchFollowing(opts.me)), opts.me])
 	}
+	if (opts.tag) q = q.ilike('body', `%#${opts.tag.replace(/[%_,()]/g, '')}%`)
 	const { data, error } = await q
 	if (error) return { posts: [], error: error.message }
 	const posts = (data as unknown as PostRow[])
@@ -248,6 +250,44 @@ export async function reportPost(postId: string, reason: string) {
 	const { error } = await sb.from('reports').insert({ post_id: postId, reporter_id: me.profile.id, reason: reason.slice(0, 200) })
 	if (error?.code === '23505') return null // already reported
 	return fail(error) || null
+}
+
+export const HASHTAG_RE = /#([\p{L}\p{N}_]{2,30})/gu
+
+/** The most used hashtags in the latest posts. */
+export async function fetchTrends(): Promise<{ tag: string; count: number }[]> {
+	const sb = getSupabase()
+	if (!sb) return []
+	const { data } = await sb.from('posts').select('body').order('created_at', { ascending: false }).limit(300)
+	const counts = new Map<string, number>()
+	for (const row of (data ?? []) as { body: string }[])
+		for (const m of new Set([...row.body.matchAll(HASHTAG_RE)].map((x) => x[1].toLowerCase())))
+			counts.set(m, (counts.get(m) ?? 0) + 1)
+	return [...counts.entries()]
+		.map(([tag, count]) => ({ tag, count }))
+		.sort((a, b) => b.count - a.count)
+		.slice(0, 6)
+}
+
+export interface Suggestion {
+	id: string
+	username: string
+	display_name: string
+	avatar: string
+	color: string
+}
+
+/** Newest people you do not follow yet. */
+export async function fetchSuggestions(meId: string): Promise<Suggestion[]> {
+	const sb = getSupabase()
+	if (!sb) return []
+	const [following, { data }] = await Promise.all([
+		fetchFollowing(meId),
+		sb.from('profiles').select('id,username,display_name,avatar,color,suspended').order('created_at', { ascending: false }).limit(30),
+	])
+	return ((data ?? []) as (Suggestion & { suspended: boolean })[])
+		.filter((p) => p.id !== meId && !p.suspended && !following.includes(p.id))
+		.slice(0, 5)
 }
 
 /* ------------------------------------------------------------------ *

@@ -8,6 +8,7 @@ import {
 	Heart,
 	Medal,
 	MessageCircle,
+	Repeat2,
 	ShieldCheck,
 	Trash2,
 	UserRound,
@@ -97,6 +98,7 @@ const ICONS: Record<string, LucideIcon> = {
 	curtir: Heart,
 	comentar: MessageCircle,
 	denunciar: Flag,
+	repostar: Repeat2,
 	lixeira: Trash2,
 }
 

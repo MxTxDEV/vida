@@ -21,11 +21,11 @@ function Posts({ me, userId }: { me: Profile; userId: string }) {
 	if (!posts) return <p className="text-[14px] text-muted-foreground">Carregando…</p>
 	if (posts.length === 0) return <p className="text-[14px] text-muted-foreground">Nenhuma publicação ainda.</p>
 	return (
-		<div className="grid gap-3">
+		<section className="px-box overflow-hidden">
 			{posts.map((p) => (
 				<PostCard key={p.id} post={p} me={me} onRemoved={(id) => setPosts((c) => c?.filter((x) => x.id !== id) ?? null)} />
 			))}
-		</div>
+		</section>
 	)
 }
 

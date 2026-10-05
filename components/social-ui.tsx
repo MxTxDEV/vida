@@ -128,77 +128,141 @@ function CommentList({ post, me, onCount }: { post: Post; me: Profile; onCount: 
 	)
 }
 
-export function PostCard({ post: initial, me, onRemoved }: { post: Post; me: Profile; onRemoved: (id: string) => void }) {
+/** Text with clickable #hashtags and @mentions. */
+export function RichText({ text, onTag }: { text: string; onTag?: (tag: string) => void }) {
+	const parts = text.split(/(#[\p{L}\p{N}_]{2,30}|@[a-z0-9_]{3,20})/gu)
+	return (
+		<>
+			{parts.map((part, i) => {
+				if (/^#[\p{L}\p{N}_]{2,30}$/u.test(part)) {
+					const tag = part.slice(1).toLowerCase()
+					return (
+						<Link
+							key={i}
+							href={`/social?tag=${encodeURIComponent(tag)}`}
+							onClick={(e) => {
+								if (onTag) {
+									e.preventDefault()
+									onTag(tag)
+								}
+							}}
+							className="text-primary hover:underline">
+							{part}
+						</Link>
+					)
+				}
+				if (/^@[a-z0-9_]{3,20}$/.test(part))
+					return (
+						<Link key={i} href={`/u/${part.slice(1)}`} className="text-primary hover:underline">
+							{part}
+						</Link>
+					)
+				return <span key={i}>{part}</span>
+			})}
+		</>
+	)
+}
+
+/** One post, laid out like a row of the old Twitter timeline. */
+export function PostCard({
+	post: initial,
+	me,
+	onRemoved,
+	onTag,
+	onRepost,
+}: {
+	post: Post
+	me: Profile
+	onRemoved: (id: string) => void
+	onTag?: (tag: string) => void
+	onRepost?: () => void
+}) {
 	const [post, setPost] = useState(initial)
 	const [open, setOpen] = useState(false)
 	const [reported, setReported] = useState(false)
+	const [reposted, setReposted] = useState(false)
 	const a = post.author
 	const rank = a.stats ? RANKS[a.stats.rank_index] : null
 	const mine = post.user_id === me.id
-	const accent = post.kind === 'texto' ? '' : 'border-primary/40'
+
+	const action = 'inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[13px] text-muted-foreground transition hover:bg-[var(--hover)] hover:text-foreground'
 
 	return (
-		<article className={`px-box p-4 ${accent}`}>
-			<div className="flex items-start gap-3">
+		<article className="flex gap-3 border-b border-border px-4 py-3.5 transition hover:bg-[var(--hover)] last:border-b-0">
+			<Link href={`/u/${a.username}`} aria-label={`Perfil de ${a.username}`}>
 				<Avatar emoji={a.avatar} color={a.color} />
-				<div className="min-w-0 flex-1">
-					<div className="flex flex-wrap items-center gap-x-2 text-[14px]">
-						<Name username={a.username} display={a.display_name} />
-						{a.stats && (
-							<span className="inline-flex items-center gap-1 text-[12px] text-muted-foreground" title={`Rank ${rank?.label} no mês · Nível ${a.stats.level}`}>
-								<RankBadge index={a.stats.rank_index} size={1} /> Nv {a.stats.level}
-							</span>
-						)}
-						<span className="text-[12px] text-muted-foreground">· {timeAgo(post.created_at)}</span>
-					</div>
-					<p className="mt-1.5 whitespace-pre-wrap break-words text-[15px]">
-						{post.kind !== 'texto' && <span className="mr-1">{post.kind === 'rank' ? '🏅' : '🏆'}</span>}
-						{post.body}
-					</p>
-					<div className="mt-3 flex flex-wrap items-center gap-1.5 text-[13px]">
-						<button
-							className={`px-btn !min-h-8 !px-3 ${post.liked ? '!border-px-red !text-px-red' : ''}`}
-							aria-pressed={post.liked}
-							onClick={async () => {
-								const on = !post.liked
-								setPost({ ...post, liked: on, likes: post.likes + (on ? 1 : -1) })
-								if (await setLike(post.id, on)) setPost(post)
-							}}>
-							<Icon name="curtir" size={14} /> {post.likes}
-						</button>
-						<button className="px-btn !min-h-8 !px-3" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-							<Icon name="comentar" size={14} /> {post.comments}
-						</button>
-						{!mine && (
-							<button
-								className="px-btn !min-h-8 !px-3 text-muted-foreground"
-								disabled={reported}
-								title="Denunciar"
-								onClick={async () => {
-									const reason = window.prompt('Por que você está denunciando? (opcional)', '')
-									if (reason === null) return
-									if (await reportPost(post.id, reason)) window.alert('Não foi possível denunciar agora.')
-									else setReported(true)
-								}}>
-								<Icon name="denunciar" size={14} /> {reported ? 'Denunciado' : ''}
-							</button>
-						)}
-						{(mine || isStaff(me)) && (
-							<button
-								className="px-btn !min-h-8 !px-3 text-muted-foreground hover:!text-px-red"
-								aria-label="Apagar publicação"
-								title="Apagar"
-								onClick={async () => {
-									if (!window.confirm('Apagar esta publicação?')) return
-									if (await deletePost(post.id)) return window.alert('Não foi possível apagar.')
-									onRemoved(post.id)
-								}}>
-								<Icon name="lixeira" size={14} />
-							</button>
-						)}
-					</div>
-					{open && <CommentList post={post} me={me} onCount={(n) => setPost((p) => ({ ...p, comments: n }))} />}
+			</Link>
+			<div className="min-w-0 flex-1">
+				<div className="flex flex-wrap items-center gap-x-2 text-[14px]">
+					<Name username={a.username} display={a.display_name} />
+					{a.stats && (
+						<span className="inline-flex items-center gap-1 text-[12px] text-muted-foreground" title={`Rank ${rank?.label} no mês · Nível ${a.stats.level}`}>
+							<RankBadge index={a.stats.rank_index} size={1} /> Nv {a.stats.level}
+						</span>
+					)}
+					<span className="text-[12px] text-muted-foreground">· {timeAgo(post.created_at)}</span>
 				</div>
+				<p className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-snug">
+					{post.kind !== 'texto' && <span className="mr-1">{post.kind === 'rank' ? '🏅' : '🏆'}</span>}
+					<RichText text={post.body} onTag={onTag} />
+				</p>
+				<div className="-ml-2 mt-2 flex flex-wrap items-center gap-1">
+					<button className={action} onClick={() => setOpen((v) => !v)} aria-expanded={open} title="Responder">
+						<Icon name="comentar" size={15} /> {post.comments || ''}
+					</button>
+					<button
+						className={`${action} ${reposted ? '!text-px-green' : ''}`}
+						title="Repostar (RT)"
+						disabled={reposted}
+						onClick={async () => {
+							const text = `RT @${a.username}: ${post.body}`.slice(0, 500)
+							if (!window.confirm(`Repostar para quem segue você?\n\n${text.slice(0, 140)}`)) return
+							if (await createPost(text)) return window.alert('Não foi possível repostar.')
+							setReposted(true)
+							onRepost?.()
+						}}>
+						<Icon name="repostar" size={15} /> {reposted ? 'RT' : ''}
+					</button>
+					<button
+						className={`${action} ${post.liked ? '!text-px-red' : ''}`}
+						aria-pressed={post.liked}
+						title="Curtir"
+						onClick={async () => {
+							const on = !post.liked
+							setPost({ ...post, liked: on, likes: post.likes + (on ? 1 : -1) })
+							if (await setLike(post.id, on)) setPost(post)
+						}}>
+						<Icon name="curtir" size={15} /> {post.likes || ''}
+					</button>
+					{!mine && (
+						<button
+							className={action}
+							disabled={reported}
+							title="Denunciar"
+							onClick={async () => {
+								const reason = window.prompt('Por que você está denunciando? (opcional)', '')
+								if (reason === null) return
+								if (await reportPost(post.id, reason)) window.alert('Não foi possível denunciar agora.')
+								else setReported(true)
+							}}>
+							<Icon name="denunciar" size={15} /> {reported ? 'Denunciado' : ''}
+						</button>
+					)}
+					{(mine || isStaff(me)) && (
+						<button
+							className={`${action} hover:!text-px-red`}
+							aria-label="Apagar publicação"
+							title="Apagar"
+							onClick={async () => {
+								if (!window.confirm('Apagar esta publicação?')) return
+								if (await deletePost(post.id)) return window.alert('Não foi possível apagar.')
+								onRemoved(post.id)
+							}}>
+							<Icon name="lixeira" size={15} />
+						</button>
+					)}
+				</div>
+				{open && <CommentList post={post} me={me} onCount={(n) => setPost((p) => ({ ...p, comments: n }))} />}
 			</div>
 		</article>
 	)
