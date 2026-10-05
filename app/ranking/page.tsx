@@ -37,7 +37,7 @@ function Board({ me, scope }: { me: Profile; scope: 'all' | 'following' }) {
 				{rows.map((r, i) => (
 					<li key={r.user_id} className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${r.user_id === me.id ? 'border-primary/50 bg-[var(--accent-soft)]' : 'border-border'}`}>
 						<span className={`w-7 text-center font-display text-[16px] ${i < 3 ? 'text-px-yellow' : 'text-muted-foreground'}`}>{i + 1}</span>
-						<Avatar emoji={r.profile!.avatar} color={r.profile!.color} size={36} />
+						<Avatar emoji={r.profile!.avatar} color={r.profile!.color} path={r.profile!.avatar_path} size={36} />
 						<Link href={`/u/${r.profile!.username}`} className="min-w-0 flex-1 truncate hover:text-primary">
 							<span className="font-medium">{r.profile!.display_name || r.profile!.username}</span>
 							<span className="ml-1.5 text-[13px] text-muted-foreground">@{r.profile!.username}</span>

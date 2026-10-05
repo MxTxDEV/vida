@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client'
 
 import Link from 'next/link'
@@ -10,6 +11,7 @@ import {
 	deleteComment,
 	deletePost,
 	fetchComments,
+	imageUrl,
 	isStaff,
 	reportPost,
 	setLike,
@@ -19,7 +21,21 @@ import {
 	type Profile,
 } from '@/lib/social'
 
-export function Avatar({ emoji, color, size = 40 }: { emoji: string; color: string; size?: number }) {
+export function Avatar({ emoji, color, path, size = 40 }: { emoji: string; color: string; path?: string | null; size?: number }) {
+	const src = imageUrl('avatars', path)
+	if (src)
+		return (
+			<img
+				src={src}
+				alt=""
+				aria-hidden="true"
+				width={size}
+				height={size}
+				loading="lazy"
+				className="shrink-0 rounded-full object-cover"
+				style={{ width: size, height: size, boxShadow: `0 0 0 1.5px ${color}` }}
+			/>
+		)
 	return (
 		<span
 			aria-hidden="true"
@@ -87,7 +103,7 @@ function CommentList({ post, me, onCount }: { post: Post; me: Profile; onCount: 
 			{items === null && <p className="text-[13px] text-muted-foreground">Carregando…</p>}
 			{items?.map((c) => (
 				<div key={c.id} className="flex gap-2.5">
-					<Avatar emoji={c.author.avatar} color={c.author.color} size={28} />
+					<Avatar emoji={c.author.avatar} color={c.author.color} path={c.author.avatar_path} size={28} />
 					<div className="min-w-0 flex-1 text-[14px]">
 						<p className="flex flex-wrap items-baseline gap-x-2">
 							<Name username={c.author.username} display={c.author.display_name} />
@@ -190,7 +206,7 @@ export function PostCard({
 	return (
 		<article className="flex gap-3 border-b border-border px-4 py-3.5 transition hover:bg-[var(--hover)] last:border-b-0">
 			<Link href={`/u/${a.username}`} aria-label={`Perfil de ${a.username}`}>
-				<Avatar emoji={a.avatar} color={a.color} />
+				<Avatar emoji={a.avatar} color={a.color} path={a.avatar_path} />
 			</Link>
 			<div className="min-w-0 flex-1">
 				<div className="flex flex-wrap items-center gap-x-2 text-[14px]">
@@ -206,6 +222,16 @@ export function PostCard({
 					{post.kind !== 'texto' && <span className="mr-1">{post.kind === 'rank' ? '🏅' : '🏆'}</span>}
 					<RichText text={post.body} onTag={onTag} />
 				</p>
+				{post.image_path && (
+					<a href={imageUrl('posts', post.image_path) ?? '#'} target="_blank" rel="noreferrer" className="mt-2 block">
+						<img
+							src={imageUrl('posts', post.image_path) ?? ''}
+							alt="Foto da publicação"
+							loading="lazy"
+							className="max-h-[520px] w-full rounded-xl border border-border object-cover"
+						/>
+					</a>
+				)}
 				<div className="-ml-2 mt-2 flex flex-wrap items-center gap-1">
 					<button className={action} onClick={() => setOpen((v) => !v)} aria-expanded={open} title="Responder">
 						<Icon name="comentar" size={15} /> {post.comments || ''}

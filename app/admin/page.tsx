@@ -63,7 +63,7 @@ function UserRow({ u, me, onChanged }: { u: AdminUser; me: Profile; onChanged: (
 	}
 	return (
 		<li className={`flex flex-wrap items-center gap-3 rounded-xl border border-border px-3 py-2.5 ${u.suspended ? 'opacity-70' : ''}`}>
-			<Avatar emoji={u.avatar} color={u.color} size={36} />
+			<Avatar emoji={u.avatar} color={u.color} path={u.avatar_path} size={36} />
 			<div className="min-w-[160px] flex-1">
 				<Link href={`/u/${u.username}`} className="font-medium hover:text-primary">{u.display_name || u.username}</Link>
 				<p className="text-[12px] text-muted-foreground">
@@ -157,7 +157,7 @@ function Content({ me }: { me: Profile }) {
 			<ul className="grid gap-2">
 				{posts?.map((p) => (
 					<li key={p.id} className="flex items-start gap-3 rounded-xl border border-border px-3 py-2.5">
-						<Avatar emoji={p.author.avatar} color={p.author.color} size={32} />
+						<Avatar emoji={p.author.avatar} color={p.author.color} path={p.author.avatar_path} size={32} />
 						<div className="min-w-0 flex-1 text-[14px]">
 							<p className="text-[12px] text-muted-foreground">@{p.author.username} · {timeAgo(p.created_at)} · {p.likes} curtidas · {p.comments} comentários</p>
 							<p className="break-words">{p.body}</p>

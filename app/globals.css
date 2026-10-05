@@ -115,6 +115,8 @@
 
 html {
   background: var(--background);
+  /* The app draws its own pull-to-refresh. */
+  overscroll-behavior-y: contain;
 }
 
 body {

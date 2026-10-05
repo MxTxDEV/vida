@@ -58,3 +58,26 @@ Depois de ativar a sincronização, rode também o arquivo `supabase/social.sql`
 - O XP é calculado no aparelho de cada pessoa e enviado ao ranking. Num grupo de amigos isso basta, mas alguém técnico poderia mandar números falsos.
 - Para impedir cadastros novos, desligue **Authentication > Sign In / Providers > Allow new users to sign up** no Supabase.
 - Excluir uma conta pelo painel apaga o login e todos os dados dela.
+
+## Fotos, notificações e feed "Para você"
+
+Rode também o arquivo `supabase/social2.sql` (SQL Editor > New query > Run). Ele cria:
+
+- **Foto de perfil** e **fotos nas publicações** (dois buckets públicos: `avatars` até 1 MB e `posts` até 3 MB; as fotos são reduzidas no aparelho antes do envio; cada pessoa só grava na própria pasta);
+- **Notificações** de novo seguidor, curtida e comentário (criadas por gatilhos no banco, sem duplicar);
+- proteção para que moderadores não troquem a foto de ninguém.
+
+Sem esse arquivo o app continua funcionando, mas a Comunidade avisa que falta rodá-lo.
+
+### Como o feed "Para você" ordena
+
+Não é o algoritmo do Instagram (ele é proprietário e usa aprendizado de máquina). É uma fórmula transparente, em `lib/rank.ts`, com os mesmos tipos de sinal que o Instagram descreve publicamente:
+
+- **Atualidade:** o peso cai pela metade a cada 10 horas;
+- **Relacionamento e interesse:** quem você segue pesa mais; seguir de volta e quanto você curte/comenta nos posts da pessoa aumentam o peso;
+- **Popularidade:** curtidas e comentários (comentários valem o dobro), em escala logarítmica;
+- **Tipo de conteúdo:** posts com foto ganham um bônus;
+- **Descoberta:** estranhos muito populares ainda aparecem;
+- **Variedade:** nunca três posts seguidos do mesmo autor, e posts que você já curtiu descem.
+
+As abas **Seguindo** e **Recentes** continuam em ordem cronológica. As sugestões de quem seguir (`lib/suggest.ts`) priorizam quem já segue você, amigos em comum, rank parecido e quem é novo.

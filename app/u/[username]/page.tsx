@@ -56,7 +56,7 @@ function View({ me, username }: { me: Profile; username: string }) {
 		<div className="grid gap-4">
 			<Panel>
 				<div className="flex flex-wrap items-center gap-4">
-					<Avatar emoji={view.avatar} color={view.color} size={72} />
+					<Avatar emoji={view.avatar} color={view.color} path={view.avatar_path} size={72} />
 					<div className="min-w-0 flex-1">
 						<h1 className="font-display truncate text-[24px] font-semibold">{view.display_name || view.username}</h1>
 						<p className="text-[14px] text-muted-foreground">

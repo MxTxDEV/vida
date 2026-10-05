@@ -2,6 +2,8 @@
 
 import { useId } from 'react'
 import {
+	Bell,
+	Camera,
 	Check,
 	Clapperboard,
 	Flag,
@@ -100,6 +102,8 @@ const ICONS: Record<string, LucideIcon> = {
 	denunciar: Flag,
 	repostar: Repeat2,
 	lixeira: Trash2,
+	sino: Bell,
+	foto: Camera,
 }
 
 export function Icon({ name, size = 16 }: { name: string; size?: number }) {

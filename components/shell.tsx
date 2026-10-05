@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { AccountMenu } from './account'
+import { Bell } from './bell'
+import { useDismiss } from './use-dismiss'
 import { Loading, LoginScreen, RecoveryScreen, SetupScreen, SuspendedScreen } from './auth'
 import { Icon, RankBadge } from './badges'
 import { levelInfo, rankFor, seasonRange, syncGame, xpBreakdown } from '@/lib/game'
@@ -33,14 +35,20 @@ const SOCIAL = [
 
 function DataMenu() {
 	const file = useRef<HTMLInputElement>(null)
+	const menu = useRef<HTMLDetailsElement>(null)
+	useDismiss(menu)
+	const close = () => {
+		if (menu.current) menu.current.open = false
+	}
 	const item = 'px-btn !justify-start !border-0 !min-h-9 w-full'
 	return (
-		<details className="relative">
+		<details ref={menu} className="relative">
 			<summary className="px-btn cursor-pointer list-none">Dados</summary>
 			<div className="px-box absolute right-0 z-30 mt-2 flex w-56 flex-col gap-1 p-2">
 				<button
 					className={item}
 					onClick={() => {
+						close()
 						const url = URL.createObjectURL(new Blob([exportData()], { type: 'application/json' }))
 						const a = document.createElement('a')
 						a.href = url
@@ -50,12 +58,16 @@ function DataMenu() {
 					}}>
 					Exportar backup
 				</button>
-				<button className={item} onClick={() => file.current?.click()}>
+				<button className={item} onClick={() => {
+					close()
+					file.current?.click()
+				}}>
 					Importar backup
 				</button>
 				<button
 					className={`${item} text-px-red`}
 					onClick={() => {
+						close()
 						if (window.confirm('Apagar TODOS os seus dados? Isso não pode ser desfeito.')) resetData()
 					}}>
 					Apagar tudo
@@ -150,6 +162,7 @@ export function Shell({ children }: { children: ReactNode }) {
 						)}
 					</div>
 					<div className="flex items-center gap-2">
+						{social && <Bell />}
 						<AccountMenu />
 						<DataMenu />
 					</div>

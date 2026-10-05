@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { useRef } from 'react'
+import { useDismiss } from './use-dismiss'
 import { Avatar } from './social-ui'
 import { ROLE_LABEL, useMe } from '@/lib/social'
 import { syncConfigured } from '@/lib/supabase'
@@ -18,6 +20,11 @@ const LABEL = {
 export function AccountMenu() {
 	const sync = useSync()
 	const { profile } = useMe()
+	const menu = useRef<HTMLDetailsElement>(null)
+	useDismiss(menu)
+	const close = () => {
+		if (menu.current) menu.current.open = false
+	}
 
 	if (!syncConfigured)
 		return (
@@ -29,9 +36,9 @@ export function AccountMenu() {
 
 	const dot = sync.status === 'idle' ? 'bg-px-green' : sync.status === 'syncing' ? 'bg-px-yellow' : 'bg-px-red'
 	return (
-		<details className="relative">
+		<details ref={menu} className="relative">
 			<summary className="px-btn cursor-pointer list-none !pl-2">
-				<Avatar emoji={profile.avatar} color={profile.color} size={24} />
+				<Avatar emoji={profile.avatar} color={profile.color} path={profile.avatar_path} size={24} />
 				<span className="max-w-[110px] truncate">@{profile.username}</span>
 				<span aria-hidden="true" className={`size-2 rounded-full ${dot}`} />
 			</summary>
@@ -47,10 +54,13 @@ export function AccountMenu() {
 							? `${LABEL[sync.status]} às ${new Date(sync.lastSync).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
 							: LABEL[sync.status]}
 				</p>
-				<Link href="/perfil" className="px-btn w-full">
+				<Link href="/perfil" className="px-btn w-full" onClick={close}>
 					Meu perfil
 				</Link>
-				<button className="px-btn w-full" onClick={() => void signOut()}>
+				<button className="px-btn w-full" onClick={() => {
+						close()
+						void signOut()
+					}}>
 					Sair
 				</button>
 			</div>

@@ -1,47 +1,96 @@
 'use client'
 
+/* eslint-disable @next/next/no-img-element */
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Icon } from '@/components/badges'
 import { PageHeader, Panel } from '@/components/bits'
+import { PullToRefresh } from '@/components/pull-refresh'
 import { Avatar, PostCard } from '@/components/social-ui'
+import { prepareImage } from '@/lib/images'
 import {
 	createPost,
+	fetchForYou,
 	fetchPosts,
-	fetchSuggestions,
+	fetchSmartSuggestions,
 	fetchTrends,
 	isStaff,
+	needsSocial2,
+	removeImage,
 	setFollow,
+	uploadImage,
 	useMe,
 	type Post,
 	type Profile,
-	type Suggestion,
 } from '@/lib/social'
+import type { Suggested } from '@/lib/suggest'
 
 const LIMIT = 280
 const POLL_MS = 30000
+const SQL_URL = 'https://github.com/MxTxDEV/vida/blob/claude/inspiring-rubin-72ddu8/supabase/social2.sql'
 
-type Scope = 'following' | 'all'
+type Tab = 'foryou' | 'following' | 'recent'
+
+function SetupHint() {
+	return (
+		<div className="m-4 rounded-xl border border-px-yellow/50 p-4 text-[14px]">
+			<p className="font-medium text-px-yellow">Falta ativar fotos e notificações no banco</p>
+			<p className="mt-1 text-muted-foreground">
+				No Supabase, abra o <b>SQL Editor</b>, cole o arquivo{' '}
+				<a className="text-primary underline" href={SQL_URL} target="_blank" rel="noreferrer">supabase/social2.sql</a> e clique em <b>Run</b>. Depois atualize esta página.
+			</p>
+		</div>
+	)
+}
 
 function Composer({ me, onPosted }: { me: Profile; onPosted: () => void }) {
 	const [text, setText] = useState('')
+	const [photo, setPhoto] = useState<{ blob: Blob; url: string } | null>(null)
 	const [busy, setBusy] = useState(false)
 	const [error, setError] = useState('')
+	const file = useRef<HTMLInputElement>(null)
 	const left = LIMIT - text.length
 
+	const pick = async (f: File | undefined) => {
+		if (!f) return
+		setError('')
+		const r = await prepareImage(f, { max: 1280, quality: 0.82 })
+		if ('error' in r) return setError(r.error)
+		if (photo) URL.revokeObjectURL(photo.url)
+		setPhoto({ blob: r.blob, url: URL.createObjectURL(r.blob) })
+	}
+	const clear = () => {
+		if (photo) URL.revokeObjectURL(photo.url)
+		setPhoto(null)
+	}
+
 	const publish = async () => {
-		if (!text.trim() || left < 0) return
+		if ((!text.trim() && !photo) || left < 0) return
 		setBusy(true)
-		const err = await createPost(text)
+		let path: string | null = null
+		if (photo) {
+			const up = await uploadImage('posts', photo.blob)
+			if ('error' in up) {
+				setBusy(false)
+				return setError(up.error)
+			}
+			path = up.path
+		}
+		const err = await createPost(text, 'texto', path)
 		setBusy(false)
-		if (err) return setError(err)
+		if (err) {
+			await removeImage('posts', path)
+			return setError(err)
+		}
 		setText('')
+		clear()
 		setError('')
 		onPosted()
 	}
 
 	return (
 		<div className="flex gap-3 border-b border-border px-4 py-4">
-			<Avatar emoji={me.avatar} color={me.color} />
+			<Avatar emoji={me.avatar} color={me.color} path={me.avatar_path} />
 			<div className="min-w-0 flex-1">
 				<textarea
 					className="w-full resize-none bg-transparent text-[16px] outline-none placeholder:text-muted-foreground"
@@ -54,12 +103,24 @@ function Composer({ me, onPosted }: { me: Profile; onPosted: () => void }) {
 						if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) void publish()
 					}}
 				/>
+				{photo && (
+					<div className="relative mt-2">
+						<img src={photo.url} alt="Prévia da foto" className="max-h-[320px] w-full rounded-xl border border-border object-cover" />
+						<button className="px-btn absolute right-2 top-2 !min-h-8 !px-2.5 bg-card text-[12px]" onClick={clear} aria-label="Remover foto">Remover</button>
+					</div>
+				)}
 				<div className="mt-2 flex items-center justify-between gap-3">
-					<span className="text-[12px] text-muted-foreground">Use #hashtags e @menções. Ctrl + Enter publica.</span>
+					<div className="flex items-center gap-2">
+						<input ref={file} type="file" accept="image/*" hidden data-testid="post-photo" onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = '' }} />
+						<button className="px-btn !min-h-8 !px-2.5 text-[13px]" onClick={() => file.current?.click()} aria-label="Adicionar foto">
+							<Icon name="foto" size={16} /> Foto
+						</button>
+						<span className="hidden text-[12px] text-muted-foreground sm:inline">#hashtags e @menções</span>
+					</div>
 					<div className="flex items-center gap-3">
 						<span className={`text-[13px] tabular-nums ${left < 0 ? 'text-px-red' : left <= 20 ? 'text-px-yellow' : 'text-muted-foreground'}`}>{left}</span>
-						<button className="px-btn-primary" disabled={busy || !text.trim() || left < 0} onClick={publish}>
-							Publicar
+						<button className="px-btn-primary" disabled={busy || (!text.trim() && !photo) || left < 0} onClick={publish}>
+							{busy ? 'Enviando…' : 'Publicar'}
 						</button>
 					</div>
 				</div>
@@ -69,16 +130,44 @@ function Composer({ me, onPosted }: { me: Profile; onPosted: () => void }) {
 	)
 }
 
-function Timeline({ me, scope, tag, version, onTag, onBump }: { me: Profile; scope: Scope; tag: string; version: number; onTag: (t: string) => void; onBump: () => void }) {
+function InlineSuggestions({ people, onFollowed }: { people: Suggested[]; onFollowed: (id: string) => void }) {
+	if (people.length === 0) return null
+	return (
+		<div className="border-b border-border bg-[var(--hover)] px-4 py-3.5">
+			<p className="px-label mb-2.5">Sugestões para você</p>
+			<ul className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+				{people.slice(0, 5).map((p) => (
+					<li key={p.id} className="flex w-[150px] shrink-0 flex-col items-center gap-1.5 rounded-xl border border-border bg-card p-3 text-center">
+						<Avatar emoji={p.avatar} color={p.color} path={p.avatar_path} size={48} />
+						<Link href={`/u/${p.username}`} className="w-full truncate text-[14px] font-medium hover:text-primary">{p.display_name || p.username}</Link>
+						<span className="line-clamp-2 min-h-[2.4em] text-[12px] leading-tight text-muted-foreground">{p.reason}</span>
+						<button
+							className="px-btn-primary !min-h-8 w-full !px-2 text-[13px]"
+							onClick={async () => {
+								if (await setFollow(p.id, true)) return window.alert('Não foi possível seguir agora.')
+								onFollowed(p.id)
+							}}>
+							Seguir
+						</button>
+					</li>
+				))}
+			</ul>
+		</div>
+	)
+}
+
+function Timeline({ me, tab, tag, version, onTag, onBump, people, onFollowed }: { me: Profile; tab: Tab; tag: string; version: number; onTag: (t: string) => void; onBump: () => void; people: Suggested[]; onFollowed: (id: string) => void }) {
 	const [posts, setPosts] = useState<Post[] | null>(null)
 	const [fresh, setFresh] = useState<Post[]>([])
 	const [error, setError] = useState('')
-	const first = useRef('')
+	const newest = useRef('')
 
-	const load = useCallback(
-		() => fetchPosts({ me: me.id, scope, tag: tag || undefined, staff: isStaff(me) }),
-		[me, scope, tag],
-	)
+	const load = useCallback(() => {
+		const staff = isStaff(me)
+		if (tag) return fetchPosts({ me: me.id, scope: 'all', tag, staff })
+		if (tab === 'foryou') return fetchForYou(me.id, staff)
+		return fetchPosts({ me: me.id, scope: tab === 'following' ? 'following' : 'all', staff })
+	}, [me, tab, tag])
 
 	useEffect(() => {
 		let on = true
@@ -87,24 +176,24 @@ function Timeline({ me, scope, tag, version, onTag, onBump }: { me: Profile; sco
 			setPosts(r.posts)
 			setError(r.error)
 			setFresh([])
-			first.current = r.posts[0]?.created_at ?? ''
+			newest.current = r.posts.reduce((m, p) => (p.created_at > m ? p.created_at : m), '')
 		})
 		return () => {
 			on = false
 		}
 	}, [load, version])
 
-	// Like the old Twitter: check quietly for new posts and offer to show them.
+	// Quietly look for new posts and offer to show them (the order never jumps under your thumb).
 	useEffect(() => {
 		const id = window.setInterval(async () => {
 			if (document.visibilityState !== 'visible') return
 			const r = await load()
-			setFresh(r.posts.filter((p) => p.created_at > first.current && p.user_id !== me.id))
+			setFresh(r.posts.filter((p) => p.created_at > newest.current && p.user_id !== me.id))
 		}, POLL_MS)
 		return () => window.clearInterval(id)
 	}, [load, me.id])
 
-	if (error) return <p className="p-4 text-[14px] text-px-red">{error}</p>
+	if (error) return needsSocial2(error) ? <SetupHint /> : <p className="p-4 text-[14px] text-px-red">{error}</p>
 	if (!posts) return <p className="p-4 text-[14px] text-muted-foreground">Carregando…</p>
 
 	return (
@@ -115,56 +204,57 @@ function Timeline({ me, scope, tag, version, onTag, onBump }: { me: Profile; sco
 					onClick={() => {
 						const merged = [...fresh, ...posts]
 						setPosts(merged)
-						first.current = merged[0]?.created_at ?? ''
+						newest.current = merged.reduce((m, p) => (p.created_at > m ? p.created_at : m), '')
 						setFresh([])
 					}}>
 					Ver {fresh.length} {fresh.length === 1 ? 'nova publicação' : 'novas publicações'}
 				</button>
 			)}
 			{posts.length === 0 && (
-				<p className="px-4 py-10 text-center text-[14px] text-muted-foreground">
-					{tag
-						? `Nada com #${tag} ainda.`
-						: scope === 'following'
-							? 'Sua linha do tempo está vazia. Siga pessoas em "Quem seguir" ou veja a aba Todos.'
-							: 'Nenhuma publicação ainda. Seja o primeiro!'}
-				</p>
+				<>
+					<InlineSuggestions people={people} onFollowed={onFollowed} />
+					<p className="px-4 py-10 text-center text-[14px] text-muted-foreground">
+						{tag ? `Nada com #${tag} ainda.` : tab === 'following' ? 'Sua linha do tempo está vazia. Siga pessoas nas sugestões ou veja a aba Para você.' : 'Nenhuma publicação ainda. Seja o primeiro!'}
+					</p>
+				</>
 			)}
-			{posts.map((p) => (
-				<PostCard key={p.id} post={p} me={me} onTag={onTag} onRepost={onBump} onRemoved={(id) => setPosts((cur) => cur?.filter((x) => x.id !== id) ?? null)} />
+			{posts.map((p, i) => (
+				<div key={p.id}>
+					<PostCard post={p} me={me} onTag={onTag} onRepost={onBump} onRemoved={(id) => setPosts((cur) => cur?.filter((x) => x.id !== id) ?? null)} />
+					{i === 2 && <InlineSuggestions people={people} onFollowed={onFollowed} />}
+				</div>
 			))}
+			{posts.length > 0 && posts.length < 3 && <InlineSuggestions people={people} onFollowed={onFollowed} />}
 		</>
 	)
 }
 
-function Sidebar({ me, version, onTag }: { me: Profile; version: number; onTag: (t: string) => void }) {
+function Sidebar({ people, onFollowed, version, onTag }: { people: Suggested[]; onFollowed: (id: string) => void; version: number; onTag: (t: string) => void }) {
 	const [trends, setTrends] = useState<{ tag: string; count: number }[]>([])
-	const [people, setPeople] = useState<Suggestion[]>([])
 	useEffect(() => {
 		let on = true
 		fetchTrends().then((t) => on && setTrends(t))
-		fetchSuggestions(me.id).then((p) => on && setPeople(p))
 		return () => {
 			on = false
 		}
-	}, [me.id, version])
+	}, [version])
 
 	return (
 		<aside className="grid content-start gap-4">
 			<Panel title="Quem seguir">
 				<ul className="grid gap-3">
-					{people.map((p) => (
+					{people.slice(0, 5).map((p) => (
 						<li key={p.id} className="flex items-center gap-2.5">
-							<Avatar emoji={p.avatar} color={p.color} size={34} />
-							<Link href={`/u/${p.username}`} className="min-w-0 flex-1 truncate text-[14px] hover:text-primary">
+							<Avatar emoji={p.avatar} color={p.color} path={p.avatar_path} size={36} />
+							<Link href={`/u/${p.username}`} className="min-w-0 flex-1 text-[14px] hover:text-primary">
 								<span className="block truncate font-medium">{p.display_name || p.username}</span>
-								<span className="block truncate text-[12px] text-muted-foreground">@{p.username}</span>
+								<span className="block truncate text-[12px] text-muted-foreground">{p.reason}</span>
 							</Link>
 							<button
 								className="px-btn !min-h-8 !px-3 text-[12px]"
 								onClick={async () => {
 									if (await setFollow(p.id, true)) return window.alert('Não foi possível seguir agora.')
-									setPeople((cur) => cur.filter((x) => x.id !== p.id))
+									onFollowed(p.id)
 								}}>
 								Seguir
 							</button>
@@ -191,33 +281,46 @@ function Sidebar({ me, version, onTag }: { me: Profile; version: number; onTag: 
 }
 
 function Feed({ me }: { me: Profile }) {
-	const [scope, setScope] = useState<Scope>('following')
+	const [tab, setTab] = useState<Tab>('foryou')
 	const [tag, setTag] = useState(() => (typeof window === 'undefined' ? '' : (new URLSearchParams(window.location.search).get('tag') ?? '').toLowerCase()))
 	const [version, setVersion] = useState(0)
+	const [people, setPeople] = useState<Suggested[]>([])
 	const bump = useCallback(() => setVersion((v) => v + 1), [])
-	const tab = (s: Scope, label: string) => (
-		<button
-			key={s}
-			className={`flex-1 px-4 py-3 text-[14px] transition hover:bg-[var(--hover)] ${!tag && scope === s ? 'border-b-2 border-primary font-medium text-foreground' : 'border-b-2 border-transparent text-muted-foreground'}`}
-			onClick={() => {
-				setTag('')
-				setScope(s)
-			}}>
-			{label}
-		</button>
-	)
 
+	useEffect(() => {
+		let on = true
+		fetchSmartSuggestions(me.id).then((p) => on && setPeople(p))
+		return () => {
+			on = false
+		}
+	}, [me.id, version])
+
+	const refresh = useCallback(async () => {
+		bump()
+		await new Promise((r) => setTimeout(r, 700))
+	}, [bump])
+
+	const tabs: [Tab, string][] = [['foryou', 'Para você'], ['following', 'Seguindo'], ['recent', 'Recentes']]
 	return (
-		<>
-			<PageHeader title="Comunidade" hint="A linha do tempo de quem você segue.">
+		<PullToRefresh onRefresh={refresh}>
+			<PageHeader title="Comunidade" hint="Puxe a tela para baixo para atualizar.">
 				<button className="px-btn" onClick={bump}>Atualizar</button>
 			</PageHeader>
 			<div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
 				<section className="px-box overflow-hidden">
 					<Composer me={me} onPosted={bump} />
 					<div className="flex border-b border-border">
-						{tab('following', 'Início')}
-						{tab('all', 'Todos')}
+						{tabs.map(([id, label]) => (
+							<button
+								key={id}
+								className={`flex-1 px-3 py-3 text-[14px] transition hover:bg-[var(--hover)] ${!tag && tab === id ? 'border-b-2 border-primary font-medium text-foreground' : 'border-b-2 border-transparent text-muted-foreground'}`}
+								onClick={() => {
+									setTag('')
+									setTab(id)
+								}}>
+								{label}
+							</button>
+						))}
 					</div>
 					{tag && (
 						<div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-[14px]">
@@ -225,11 +328,11 @@ function Feed({ me }: { me: Profile }) {
 							<button className="px-btn !min-h-8 !px-3 text-[12px]" onClick={() => setTag('')}>Limpar filtro</button>
 						</div>
 					)}
-					<Timeline me={me} scope={tag ? 'all' : scope} tag={tag} version={version} onTag={setTag} onBump={bump} />
+					<Timeline me={me} tab={tab} tag={tag} version={version} onTag={setTag} onBump={bump} people={people} onFollowed={(id) => setPeople((c) => c.filter((x) => x.id !== id))} />
 				</section>
-				<Sidebar me={me} version={version} onTag={setTag} />
+				<Sidebar people={people} onFollowed={(id) => setPeople((c) => c.filter((x) => x.id !== id))} version={version} onTag={setTag} />
 			</div>
-		</>
+		</PullToRefresh>
 	)
 }
 
