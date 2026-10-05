@@ -17,7 +17,7 @@ export async function publishStats(userId: string, s: AppState) {
 		month_xp: monthXp,
 		lifetime_xp: lifetime,
 		level: levelInfo(lifetime).level,
-		rank_index: rankFor(monthXp, s.settings.tiers).index,
+		rank_index: rankFor(monthXp).index,
 		streak: diaryStreak(s).current,
 		achievements: ACHIEVEMENTS.filter((a) => s.unlocked[a.id]).length,
 	}

@@ -81,3 +81,29 @@ Não é o algoritmo do Instagram (ele é proprietário e usa aprendizado de máq
 - **Variedade:** nunca três posts seguidos do mesmo autor, e posts que você já curtiu descem.
 
 As abas **Seguindo** e **Recentes** continuam em ordem cronológica. As sugestões de quem seguir (`lib/suggest.ts`) priorizam quem já segue você, amigos em comum, rank parecido e quem é novo.
+
+## Limites e regras oficiais (anti-spam e anti-trapaça)
+
+Rode também `supabase/limits.sql` (depois do `social2.sql`). Os números de XP ficam em `lib/rules.ts` e precisam bater com esse arquivo.
+
+**XP e ranking (iguais para todos, não editáveis no app)**
+
+| Ação | XP | Limite |
+|---|---|---|
+| Diário | 5 | 3 por dia |
+| Lançamento financeiro | 3 | 3 por dia |
+| Treino | 30 | 1 por dia, mínimo 20 min |
+| Leitura | 1 a cada 5 págs | 20 XP por dia |
+| Tarefa concluída | 10 | 3 por dia |
+| Conteúdo postado | 25 | 2 por dia |
+| Bônus de 3 missões no dia | 20 | 1 por dia |
+| Meta ganha | até 100 | 300 XP por mês |
+
+- Máximo possível: **174 XP por dia**. Registros com data futura não contam.
+- **Ranking do mês** (zera todo mês): Prata 500, Ouro 1.200, Platina 2.200, Diamante 3.400 XP. Diamante exige ~20 dias perfeitos.
+- **Nível** (XP de toda a vida): nível 10 = 20.250 XP, nível 20 = 90.250, máximo (50) = 600.250. Conquistas contam só para o nível.
+- O servidor **recalcula** rank e nível e **recusa** XP acima do máximo possível.
+
+**Limites da comunidade:** 10 publicações/hora e 30/dia, 10 fotos/dia, 40 comentários/hora, 60 novos seguidos/hora e 500 no total, 20 denúncias/dia, nome de usuário só muda a cada 14 dias, no máximo 8 metas ativas.
+
+**Limite honesto:** o diário, as finanças etc. são privados e ficam no aparelho; por isso o servidor não consegue conferir cada registro, só se o total é *possível*. Quem trapacear pela API não passa de 174 XP por dia, o mesmo teto de quem joga certo.

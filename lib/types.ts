@@ -123,20 +123,6 @@ export interface Settings {
 	financeCategories: string[]
 	workoutGroups: string[]
 	platforms: string[]
-	/** XP given per action. */
-	xp: {
-		diary: number
-		tx: number
-		workout: number
-		/** Pages read for 1 XP. */
-		pagesPerXp: number
-		task: number
-		post: number
-		/** Bonus for a day with 3 or more daily missions done. */
-		quest: number
-	}
-	/** Monthly XP needed for Prata, Ouro, Platina and Diamante. */
-	tiers: number[]
 	hiddenWidgets: string[]
 }
 

@@ -3,13 +3,27 @@
 import { useState } from 'react'
 import { PageHeader, Panel, Ready } from '@/components/bits'
 import { RankBadge } from '@/components/badges'
-import { defaultSettings, THEMES } from '@/lib/settings'
+import { xpForLevel } from '@/lib/game'
+import { LIMITS_TEXT, RULES } from '@/lib/rules'
+import { THEMES } from '@/lib/settings'
 import { mutate, useApp } from '@/lib/store'
 import type { Settings } from '@/lib/types'
 import { WIDGETS } from '@/lib/widgets'
 
 const save = (patch: Partial<Settings>) =>
 	mutate((s) => ({ ...s, settings: { ...s.settings, ...patch } }))
+
+const RULE_ROWS: [string, string][] = [
+	[`Diário (até ${RULES.diary.perDay} por dia)`, `${RULES.diary.xp} XP cada`],
+	[`Lançamento financeiro (até ${RULES.tx.perDay} por dia)`, `${RULES.tx.xp} XP cada`],
+	['Treino (1 por dia, mínimo 20 min)', `${RULES.workout.xp} XP`],
+	[`Leitura (até ${RULES.reading.maxXpPerDay} XP por dia)`, `1 XP a cada ${RULES.reading.pagesPerXp} págs`],
+	[`Tarefa concluída (até ${RULES.task.perDay} por dia)`, `${RULES.task.xp} XP cada`],
+	[`Conteúdo postado (até ${RULES.post.perDay} por dia)`, `${RULES.post.xp} XP cada`],
+	[`Bônus de ${RULES.quest.min} missões no dia`, `${RULES.quest.bonus} XP`],
+	['Meta ganha (máx. por meta / por mês)', `${RULES.goals.maxXpPerGoal} / ${RULES.goals.maxXpPerMonth} XP`],
+	['Máximo possível por dia', `${RULES.maxDaily} XP`],
+]
 
 const SWATCH: Record<Settings['theme'], string[]> = {
 	escuro: ['#0a0c11', '#11141b', '#232937', '#8ab4ff', '#34d399'],
@@ -55,42 +69,8 @@ function ListEditor({ title, hint, items, onChange }: { title: string; hint: str
 	)
 }
 
-function NumberField({ label, value, onSave, suffix }: { label: string; value: number; onSave: (n: number) => void; suffix?: string }) {
-	return (
-		<label className="flex items-center justify-between gap-3 text-[14px]">
-			<span>{label}</span>
-			<span className="flex items-center gap-2">
-				<input
-					key={value}
-					defaultValue={value}
-					inputMode="decimal"
-					aria-label={label}
-					onBlur={(e) => {
-						const n = Number(e.target.value.replace(',', '.'))
-						if (Number.isFinite(n) && n >= 0 && n !== value) onSave(n)
-						else e.target.value = String(value)
-					}}
-					onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-					className="px-input w-24 text-right tabular-nums"
-				/>
-				{suffix && <span className="w-12 text-[13px] text-muted-foreground">{suffix}</span>}
-			</span>
-		</label>
-	)
-}
-
 function Options() {
 	const { settings: st } = useApp()
-	const def = defaultSettings()
-	const xp = st.xp
-	const setXp = (k: keyof Settings['xp'], n: number) => save({ xp: { ...xp, [k]: k === 'pagesPerXp' ? Math.max(1, n) : n } })
-	const setTier = (i: number, n: number) => {
-		const tiers = [...st.tiers]
-		tiers[i] = n
-		// Keep the thresholds in rising order.
-		save({ tiers: tiers.map((v, k) => (k > 0 ? Math.max(v, tiers[k - 1] + 1) : Math.max(1, v))) })
-	}
-	const ranks = ['Prata', 'Ouro', 'Platina', 'Diamante']
 
 	return (
 		<>
@@ -137,33 +117,47 @@ function Options() {
 					</ul>
 				</Panel>
 
-				<div className="grid gap-4 lg:grid-cols-2">
-					<Panel title="Pontos por ação (XP)" meta={<button className="px-btn" onClick={() => save({ xp: def.xp })}>Padrão</button>}>
-						<div className="grid gap-3">
-							<NumberField label="Anotação no diário (até 3/dia)" value={xp.diary} onSave={(n) => setXp('diary', n)} suffix="XP" />
-							<NumberField label="Lançamento financeiro (até 3/dia)" value={xp.tx} onSave={(n) => setXp('tx', n)} suffix="XP" />
-							<NumberField label="Treino" value={xp.workout} onSave={(n) => setXp('workout', n)} suffix="XP" />
-							<NumberField label="Páginas para 1 XP" value={xp.pagesPerXp} onSave={(n) => setXp('pagesPerXp', n)} suffix="págs" />
-							<NumberField label="Tarefa concluída" value={xp.task} onSave={(n) => setXp('task', n)} suffix="XP" />
-							<NumberField label="Conteúdo postado" value={xp.post} onSave={(n) => setXp('post', n)} suffix="XP" />
-							<NumberField label="Bônus de 3 missões no dia" value={xp.quest} onSave={(n) => setXp('quest', n)} suffix="XP" />
-						</div>
-					</Panel>
-
-					<Panel title="Faixas do ranking mensal" meta={<button className="px-btn" onClick={() => save({ tiers: def.tiers })}>Padrão</button>}>
-						<p className="mb-3 text-[13px] text-muted-foreground">XP no mês para entrar em cada rank. Bronze começa em 0.</p>
-						<div className="grid gap-3">
-							{ranks.map((name, i) => (
-								<div key={name} className="flex items-center gap-3">
-									<RankBadge index={i + 1} size={2} />
-									<div className="flex-1">
-										<NumberField label={name} value={st.tiers[i]} onSave={(n) => setTier(i, n)} suffix="XP" />
-									</div>
-								</div>
+				<Panel title="Regras oficiais" meta="iguais para todos, não editáveis">
+					<p className="mb-4 text-[14px] text-muted-foreground">
+						Os pontos e o ranking valem para a comunidade inteira, por isso não dá para mudar. Cada ação tem um limite por dia, e o servidor confere os números enviados.
+					</p>
+					<div className="grid gap-6 lg:grid-cols-2">
+						<ul className="grid gap-2 text-[14px]">
+							{RULE_ROWS.map(([label, value]) => (
+								<li key={label} className="flex justify-between gap-4 border-b border-border/60 pb-2 last:border-0">
+									<span>{label}</span>
+									<span className="text-right text-muted-foreground tabular-nums">{value}</span>
+								</li>
 							))}
+						</ul>
+						<div className="grid content-start gap-5">
+							<div>
+								<p className="px-label mb-2">Faixas do ranking mensal (XP no mês)</p>
+								<ul className="grid gap-2">
+									{['Bronze', 'Prata', 'Ouro', 'Platina', 'Diamante'].map((name, i) => (
+										<li key={name} className="flex items-center gap-3 text-[14px]">
+											<RankBadge index={i} size={1.6} />
+											<span className="flex-1">{name}</span>
+											<span className="text-muted-foreground tabular-nums">{i === 0 ? '0' : `${RULES.tiers[i - 1]}+`} XP</span>
+										</li>
+									))}
+								</ul>
+							</div>
+							<div>
+								<p className="px-label mb-2">Nível (XP de toda a vida)</p>
+								<p className="text-[14px] text-muted-foreground">
+									Nível 10 com {xpForLevel(10).toLocaleString('pt-BR')} XP, nível 20 com {xpForLevel(20).toLocaleString('pt-BR')} e o máximo (nível {RULES.level.max}) com {xpForLevel(RULES.level.max).toLocaleString('pt-BR')}. Conquistas contam só para o nível, nunca para o ranking do mês.
+								</p>
+							</div>
+							<div>
+								<p className="px-label mb-2">Limites da comunidade</p>
+								<ul className="grid gap-1 text-[14px] text-muted-foreground">
+									{LIMITS_TEXT.map((t) => <li key={t}>• {t}</li>)}
+								</ul>
+							</div>
 						</div>
-					</Panel>
-				</div>
+					</div>
+				</Panel>
 
 				<ListEditor
 					title="Categorias de finanças"

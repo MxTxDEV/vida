@@ -118,7 +118,7 @@ export function Shell({ children }: { children: ReactNode }) {
 	const life = state.ready ? xpBreakdown(state).total : 0
 	const monthXp = state.ready ? xpBreakdown(state, seasonRange()).total : 0
 	const lv = levelInfo(life)
-	const rank = rankFor(monthXp, state.settings.tiers)
+	const rank = rankFor(monthXp)
 
 	// Signed-out visitors only see the sign-in screen.
 	let gate: ReactNode = null

@@ -8,6 +8,7 @@ import {
 	weekStart,
 	type Range,
 } from './dates'
+import { RULES } from './rules'
 import type { AppState, Area, Goal, MetricId, Settlement } from './types'
 
 /* ------------------------------------------------------------------ *
@@ -104,6 +105,9 @@ const AREA_LABEL: Record<Area, string> = {
 }
 export const areaLabel = (a: Area) => AREA_LABEL[a]
 
+/** A goal can never be worth more than the official maximum. */
+export const clampXp = (n: number) => Math.max(0, Math.min(RULES.goals.maxXpPerGoal, Math.round(Number(n) || 0)))
+
 const settlementFor = (
 	g: Goal,
 	start: string,
@@ -116,7 +120,7 @@ const settlementFor = (
 	date,
 	result: won ? 'won' : 'lost',
 	text: won ? g.reward : g.penalty,
-	xp: won ? g.xpWin : -g.xpLose,
+	xp: won ? clampXp(g.xpWin) : -clampXp(g.xpLose),
 	resolved: false,
 })
 
@@ -199,24 +203,24 @@ const savings = (s: AppState) =>
 	s.txs.reduce((n, t) => n + (t.type === 'receita' ? t.amount : -t.amount), 0)
 
 export const ACHIEVEMENTS: Achievement[] = [
-	{ id: 'first_log', icon: '📝', title: 'Primeira anotação', desc: 'Registre algo no diário.', xp: 20, check: (s) => s.logs.length >= 1 },
-	{ id: 'streak7', icon: '🔥', title: 'Semana em chamas', desc: '7 dias seguidos anotando o diário.', xp: 100, check: (s) => diaryStreak(s).best >= 7 },
-	{ id: 'days30', icon: '📅', title: 'Mês documentado', desc: '30 dias diferentes no diário.', xp: 250, check: (s) => new Set(s.logs.map((l) => l.date)).size >= 30 },
-	{ id: 'first_workout', icon: '💪', title: 'Primeiro treino', desc: 'Registre um treino.', xp: 30, check: (s) => s.workouts.length >= 1 },
-	{ id: 'workouts12', icon: '🏋️', title: 'Rato de academia', desc: '12 treinos registrados.', xp: 150, check: (s) => s.workouts.length >= 12 },
-	{ id: 'workouts50', icon: '🦍', title: 'Monstro', desc: '50 treinos registrados.', xp: 500, check: (s) => s.workouts.length >= 50 },
-	{ id: 'pages300', icon: '📖', title: 'Leitor', desc: 'Leia 300 páginas no total.', xp: 80, check: (s) => totalPages(s) >= 300 },
-	{ id: 'book_done', icon: '📚', title: 'Livro finalizado', desc: 'Termine um livro.', xp: 150, check: (s) => s.books.some((b) => b.status === 'Terminado') },
-	{ id: 'pages2000', icon: '🧠', title: 'Devorador', desc: 'Leia 2.000 páginas no total.', xp: 400, check: (s) => totalPages(s) >= 2000 },
-	{ id: 'tasks10', icon: '✅', title: 'Mão na massa', desc: 'Conclua 10 tarefas de projetos.', xp: 100, check: (s) => doneTasks(s) >= 10 },
-	{ id: 'project_done', icon: '🚀', title: 'Projeto entregue', desc: 'Conclua um projeto.', xp: 300, check: (s) => s.projects.some((p) => p.status === 'Concluído') },
-	{ id: 'first_post', icon: '📣', title: 'No ar', desc: 'Poste seu primeiro conteúdo.', xp: 50, check: (s) => postedCount(s) >= 1 },
-	{ id: 'posts10', icon: '🎬', title: 'Criador', desc: '10 conteúdos postados.', xp: 250, check: (s) => postedCount(s) >= 10 },
-	{ id: 'posts30', icon: '🌟', title: 'Máquina de conteúdo', desc: '30 conteúdos postados.', xp: 600, check: (s) => postedCount(s) >= 30 },
-	{ id: 'tx30', icon: '🧾', title: 'Contas em dia', desc: '30 lançamentos financeiros.', xp: 100, check: (s) => s.txs.length >= 30 },
-	{ id: 'saver1000', icon: '💰', title: 'Reserva de R$ 1.000', desc: 'Saldo acumulado de pelo menos R$ 1.000.', xp: 300, check: (s) => savings(s) >= 1000 },
-	{ id: 'win1', icon: '🏆', title: 'Primeira conquista', desc: 'Ganhe sua primeira meta.', xp: 50, check: (s) => wonCount(s) >= 1 },
-	{ id: 'win10', icon: '👑', title: 'Imparável', desc: 'Ganhe 10 metas.', xp: 400, check: (s) => wonCount(s) >= 10 },
+	{ id: 'first_log', icon: '📝', title: 'Primeira anotação', desc: 'Registre algo no diário.', xp: 10, check: (s) => s.logs.length >= 1 },
+	{ id: 'streak7', icon: '🔥', title: 'Semana em chamas', desc: '7 dias seguidos anotando o diário.', xp: 50, check: (s) => diaryStreak(s).best >= 7 },
+	{ id: 'days30', icon: '📅', title: 'Mês documentado', desc: '30 dias diferentes no diário.', xp: 125, check: (s) => new Set(s.logs.map((l) => l.date)).size >= 30 },
+	{ id: 'first_workout', icon: '💪', title: 'Primeiro treino', desc: 'Registre um treino.', xp: 15, check: (s) => s.workouts.length >= 1 },
+	{ id: 'workouts12', icon: '🏋️', title: 'Rato de academia', desc: '12 treinos registrados.', xp: 75, check: (s) => s.workouts.length >= 12 },
+	{ id: 'workouts50', icon: '🦍', title: 'Monstro', desc: '50 treinos registrados.', xp: 250, check: (s) => s.workouts.length >= 50 },
+	{ id: 'pages300', icon: '📖', title: 'Leitor', desc: 'Leia 300 páginas no total.', xp: 40, check: (s) => totalPages(s) >= 300 },
+	{ id: 'book_done', icon: '📚', title: 'Livro finalizado', desc: 'Termine um livro.', xp: 75, check: (s) => s.books.some((b) => b.status === 'Terminado') },
+	{ id: 'pages2000', icon: '🧠', title: 'Devorador', desc: 'Leia 2.000 páginas no total.', xp: 200, check: (s) => totalPages(s) >= 2000 },
+	{ id: 'tasks10', icon: '✅', title: 'Mão na massa', desc: 'Conclua 10 tarefas de projetos.', xp: 50, check: (s) => doneTasks(s) >= 10 },
+	{ id: 'project_done', icon: '🚀', title: 'Projeto entregue', desc: 'Conclua um projeto.', xp: 150, check: (s) => s.projects.some((p) => p.status === 'Concluído') },
+	{ id: 'first_post', icon: '📣', title: 'No ar', desc: 'Poste seu primeiro conteúdo.', xp: 25, check: (s) => postedCount(s) >= 1 },
+	{ id: 'posts10', icon: '🎬', title: 'Criador', desc: '10 conteúdos postados.', xp: 125, check: (s) => postedCount(s) >= 10 },
+	{ id: 'posts30', icon: '🌟', title: 'Máquina de conteúdo', desc: '30 conteúdos postados.', xp: 300, check: (s) => postedCount(s) >= 30 },
+	{ id: 'tx30', icon: '🧾', title: 'Contas em dia', desc: '30 lançamentos financeiros.', xp: 50, check: (s) => s.txs.length >= 30 },
+	{ id: 'saver1000', icon: '💰', title: 'Reserva de R$ 1.000', desc: 'Saldo acumulado de pelo menos R$ 1.000.', xp: 150, check: (s) => savings(s) >= 1000 },
+	{ id: 'win1', icon: '🏆', title: 'Primeira conquista', desc: 'Ganhe sua primeira meta.', xp: 25, check: (s) => wonCount(s) >= 1 },
+	{ id: 'win10', icon: '👑', title: 'Imparável', desc: 'Ganhe 10 metas.', xp: 200, check: (s) => wonCount(s) >= 10 },
 ]
 
 /* ------------------------------------------------------------------ *
@@ -225,15 +229,15 @@ export const ACHIEVEMENTS: Achievement[] = [
 
 export const QUESTS = [
 	{ id: 'diary', label: 'Anotar no diário' },
-	{ id: 'body', label: 'Treinar' },
-	{ id: 'read', label: 'Ler 10 páginas' },
+	{ id: 'body', label: 'Treinar (20 min ou mais)' },
+	{ id: 'read', label: `Ler ${RULES.quest.readPages} páginas` },
 	{ id: 'work', label: 'Concluir uma tarefa' },
 	{ id: 'create', label: 'Postar conteúdo' },
 	{ id: 'money', label: 'Lançar uma finança' },
 ] as const
 
 /** Missions needed in one day to earn the daily bonus. */
-export const QUEST_MIN = 3
+export const QUEST_MIN = RULES.quest.min
 
 function questDays(s: AppState) {
 	const days = new Map<string, Set<string>>()
@@ -244,10 +248,10 @@ function questDays(s: AppState) {
 		set.add(q)
 	}
 	s.logs.forEach((x) => add(x.date, 'diary'))
-	s.workouts.forEach((x) => add(x.date, 'body'))
+	s.workouts.forEach((x) => x.minutes >= RULES.workout.minMinutes && add(x.date, 'body'))
 	const pages = new Map<string, number>()
 	s.readings.forEach((r) => pages.set(r.date, (pages.get(r.date) ?? 0) + r.pages))
-	pages.forEach((n, d) => n >= 10 && add(d, 'read'))
+	pages.forEach((n, d) => n >= RULES.quest.readPages && add(d, 'read'))
 	s.tasks.forEach((t) => t.done && add(t.doneAt, 'work'))
 	s.posts.forEach((p) => p.status === 'Postado' && add(p.date, 'create'))
 	s.txs.forEach((t) => add(t.date, 'money'))
@@ -263,6 +267,9 @@ export function questsOn(s: AppState, date = today()) {
  * XP and levels
  * ------------------------------------------------------------------ */
 
+const isDate = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d)
+
+/** Counts items per day, keeping at most `cap` a day. */
 function perDayCapped(dates: string[], cap: number) {
 	const per = new Map<string, number>()
 	for (const d of dates) per.set(d, (per.get(d) ?? 0) + 1)
@@ -272,56 +279,86 @@ function perDayCapped(dates: string[], cap: number) {
 }
 
 /**
- * XP earned, either for a whole lifetime (no range) or inside a range, such
- * as the current month. Everything is derived from dated records, so a month
- * resets by itself and lifetime XP never does.
+ * XP earned, either for a lifetime (no range) or inside a range, such as the
+ * current month. Everything is derived from dated records under the official
+ * rules: each action has a daily cap, entries dated in the future do not
+ * count, and goals are limited per goal and per month. Achievements count for
+ * the lifetime level only, never for the monthly ranking.
  */
-export function xpBreakdown(s: AppState, r?: Range) {
-	const ok = (d: string) => !r || inRange(d, r)
-	const x = s.settings.xp
-	const pages = s.readings.filter((p) => ok(p.date)).reduce((n, p) => n + p.pages, 0)
+export function xpBreakdown(s: AppState, r?: Range, now = today()) {
+	const ok = (d: string) => isDate(d) && d <= now && (!r || inRange(d, r))
+	const R = RULES
+
+	// Reading: pages are capped per day.
+	const pagesPerDay = new Map<string, number>()
+	for (const p of s.readings) if (ok(p.date)) pagesPerDay.set(p.date, (pagesPerDay.get(p.date) ?? 0) + Math.max(0, p.pages))
+	let readingXp = 0
+	pagesPerDay.forEach((n) => (readingXp += Math.min(R.reading.maxXpPerDay, Math.floor(n / R.reading.pagesPerXp))))
+
+	// Workouts: one a day, and it must last long enough.
+	const workoutDays = new Set(s.workouts.filter((w) => ok(w.date) && w.minutes >= R.workout.minMinutes).map((w) => w.date))
+
 	let questDaysDone = 0
 	questDays(s).forEach((set, d) => {
-		if (ok(d) && set.size >= QUEST_MIN) questDaysDone++
+		if (ok(d) && set.size >= R.quest.min) questDaysDone++
 	})
+
+	// Goals: capped per goal, and positive XP is capped per calendar month.
+	const wonByMonth = new Map<string, number>()
+	let goalXp = 0
+	for (const y of s.settlements) {
+		if (!ok(y.date)) continue
+		const v = y.xp > 0 ? Math.min(R.goals.maxXpPerGoal, y.xp) : Math.max(-R.goals.maxXpPerGoal, y.xp)
+		if (v > 0) wonByMonth.set(y.date.slice(0, 7), (wonByMonth.get(y.date.slice(0, 7)) ?? 0) + v)
+		else goalXp += v
+	}
+	wonByMonth.forEach((v) => (goalXp += Math.min(R.goals.maxXpPerMonth, v)))
+
 	const rows = [
-		{ label: 'Diário (até 3/dia)', xp: perDayCapped(s.logs.filter((l) => ok(l.date)).map((l) => l.date), 3) * x.diary },
-		{ label: 'Lançamentos (até 3/dia)', xp: perDayCapped(s.txs.filter((t) => ok(t.date)).map((t) => t.date), 3) * x.tx },
-		{ label: 'Treinos', xp: s.workouts.filter((w) => ok(w.date)).length * x.workout },
-		{ label: 'Leitura', xp: x.pagesPerXp > 0 ? Math.floor(pages / x.pagesPerXp) : 0 },
-		{ label: 'Tarefas concluídas', xp: s.tasks.filter((t) => t.done && ok(t.doneAt)).length * x.task },
-		{ label: 'Conteúdos postados', xp: s.posts.filter((p) => p.status === 'Postado' && ok(p.date)).length * x.post },
-		{ label: 'Bônus de missões do dia', xp: questDaysDone * x.quest },
-		{ label: 'Metas (ganhos e perdas)', xp: s.settlements.filter((y) => ok(y.date)).reduce((n, y) => n + y.xp, 0) },
+		{ label: `Diário (até ${R.diary.perDay}/dia)`, xp: perDayCapped(s.logs.filter((l) => ok(l.date)).map((l) => l.date), R.diary.perDay) * R.diary.xp },
+		{ label: `Lançamentos (até ${R.tx.perDay}/dia)`, xp: perDayCapped(s.txs.filter((t) => ok(t.date)).map((t) => t.date), R.tx.perDay) * R.tx.xp },
+		{ label: 'Treinos (1 por dia, 20 min+)', xp: workoutDays.size * R.workout.xp },
+		{ label: `Leitura (${R.reading.pagesPerXp} págs = 1 XP, até ${R.reading.maxXpPerDay}/dia)`, xp: readingXp },
+		{ label: `Tarefas (até ${R.task.perDay}/dia)`, xp: perDayCapped(s.tasks.filter((t) => t.done && ok(t.doneAt)).map((t) => t.doneAt), R.task.perDay) * R.task.xp },
+		{ label: `Conteúdos postados (até ${R.post.perDay}/dia)`, xp: perDayCapped(s.posts.filter((p) => p.status === 'Postado' && ok(p.date)).map((p) => p.date), R.post.perDay) * R.post.xp },
+		{ label: 'Bônus de missões do dia', xp: questDaysDone * R.quest.bonus },
+		{ label: 'Metas (ganhos e perdas)', xp: goalXp },
 		{
-			label: 'Conquistas',
-			xp: ACHIEVEMENTS.filter((a) => s.unlocked[a.id] && ok(s.unlocked[a.id])).reduce((n, a) => n + a.xp, 0),
+			// Only for the lifetime level.
+			label: 'Conquistas (só nível)',
+			xp: r ? 0 : ACHIEVEMENTS.filter((a) => s.unlocked[a.id] && ok(s.unlocked[a.id])).reduce((n, a) => n + a.xp, 0),
 		},
 	]
 	return { rows, total: Math.max(0, rows.reduce((n, r2) => n + r2.xp, 0)) }
 }
 
-export const LEVEL_TITLES = [
-	'Novato',
-	'Aprendiz',
-	'Aventureiro',
-	'Veterano',
-	'Mestre',
-	'Campeão',
-	'Lenda',
-]
+/** Titles by level: the highest ones are very far away. */
+export function levelTitle(level: number) {
+	if (level >= 40) return 'Lenda'
+	if (level >= 30) return 'Campeão'
+	if (level >= 20) return 'Mestre'
+	if (level >= 15) return 'Veterano'
+	if (level >= 10) return 'Aventureiro'
+	if (level >= 5) return 'Aprendiz'
+	return 'Novato'
+}
 
-/** Lifetime level. It only ever goes up. */
+/** XP needed to reach a level. */
+export const xpForLevel = (level: number) => RULES.level.divisor * (level - 1) ** 2
+
+/** Lifetime level. It only ever goes up, and it tops out at the maximum level. */
 export function levelInfo(xp: number) {
-	const level = Math.floor(Math.sqrt(xp / 100)) + 1
-	const floor = 100 * (level - 1) ** 2
-	const ceil = 100 * level ** 2
+	const level = Math.min(RULES.level.max, Math.floor(Math.sqrt(Math.max(0, xp) / RULES.level.divisor)) + 1)
+	const floor = xpForLevel(level)
+	const maxed = level >= RULES.level.max
+	const ceil = xpForLevel(level + 1)
 	return {
 		level,
-		title: LEVEL_TITLES[Math.min(level - 1, LEVEL_TITLES.length - 1)],
+		title: levelTitle(level),
 		into: xp - floor,
 		span: ceil - floor,
-		pct: (xp - floor) / (ceil - floor),
+		pct: maxed ? 1 : (xp - floor) / (ceil - floor),
+		maxed,
 	}
 }
 
@@ -337,7 +374,7 @@ export const RANKS = [
 	{ id: 'diamante', label: 'Diamante' },
 ] as const
 
-export function rankFor(xp: number, tiers: number[]) {
+export function rankFor(xp: number, tiers: readonly number[] = RULES.tiers) {
 	const floors = [0, ...tiers]
 	let index = 0
 	floors.forEach((f, k) => {
@@ -380,7 +417,7 @@ export function seasonHistory(s: AppState, now = today()) {
 	let m = monthStart(first)
 	for (let i = 0; m < current && i < 60; i++) {
 		const xp = xpBreakdown(s, { from: m, to: monthEnd(m) }).total
-		out.push({ month: m, xp, rank: rankFor(xp, s.settings.tiers) })
+		out.push({ month: m, xp, rank: rankFor(xp) })
 		m = addMonths(m, 1)
 	}
 	return out.reverse()

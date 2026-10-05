@@ -28,6 +28,7 @@ import {
 	seasonRange,
 	xpBreakdown,
 } from '@/lib/game'
+import { RULES } from '@/lib/rules'
 import { addItem, mutate, useApp } from '@/lib/store'
 import { AREAS, type AppState, type Area } from '@/lib/types'
 import { WIDGETS } from '@/lib/widgets'
@@ -90,7 +91,7 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 	switch (kind) {
 		case 'rank': {
 			const xp = xpBreakdown(s, seasonRange(now)).total
-			const r = rankFor(xp, s.settings.tiers)
+			const r = rankFor(xp)
 			const left = Math.max(0, Math.round((new Date(month.to).getTime() - new Date(now).getTime()) / 86400000))
 			return (
 				<Tile title="Ranking do mês" href="/metas" meta="temporada ▶">
@@ -123,7 +124,7 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 					</div>
 					<div className="mt-auto space-y-1">
 						<Bar pct={lv.pct} tone="blue" />
-						<p className="text-[13px] text-muted-foreground tabular-nums">{lv.into}/{lv.span} XP</p>
+						<p className="text-[13px] text-muted-foreground tabular-nums">{lv.maxed ? 'Nível máximo' : `${lv.into}/${lv.span} XP`}</p>
 					</div>
 				</Tile>
 			)
@@ -158,7 +159,7 @@ function Widgets({ s, kind }: { s: AppState; kind: string }) {
 						))}
 					</ul>
 					<p className={`text-[13px] ${done >= QUEST_MIN ? 'text-px-green' : 'text-muted-foreground'}`}>
-						{done >= QUEST_MIN ? `★ Bônus de +${s.settings.xp.quest} XP garantido!` : `Faça ${QUEST_MIN} para ganhar +${s.settings.xp.quest} XP`}
+						{done >= QUEST_MIN ? `★ Bônus de +${RULES.quest.bonus} XP garantido!` : `Faça ${QUEST_MIN} para ganhar +${RULES.quest.bonus} XP`}
 					</p>
 				</Tile>
 			)

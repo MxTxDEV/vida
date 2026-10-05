@@ -11,6 +11,7 @@ import {
 	ACHIEVEMENTS,
 	areaLabel,
 	claimGoal,
+	clampXp,
 	goalProgress,
 	levelInfo,
 	METRICS,
@@ -23,6 +24,7 @@ import {
 	xpBreakdown,
 } from '@/lib/game'
 import { lastMonths, monthLabel } from '@/lib/periods'
+import { RULES } from '@/lib/rules'
 import { addItem, mutate, removeItem, updateItem, useApp } from '@/lib/store'
 import { AREAS, type Area, type Goal, type MetricId } from '@/lib/types'
 
@@ -47,6 +49,7 @@ const toNum = (v: string) => Math.max(0, Number(v.replace(',', '.')) || 0)
 
 function GoalCard({ g }: { g: Goal }) {
 	const s = useApp()
+	const activeCount = s.goals.filter((x) => x.active).length
 	const p = goalProgress(g, s)
 	const over = g.dir === 'max' && !p.met
 	const set = (patch: Partial<Goal>) => updateItem('goals', g.id, patch)
@@ -62,7 +65,13 @@ function GoalCard({ g }: { g: Goal }) {
 							Resgatar +{g.xpWin} XP
 						</button>
 					)}
-					<button className="px-btn" onClick={() => set({ active: !g.active })}>{g.active ? 'Pausar' : 'Ativar'}</button>
+					<button
+						className="px-btn"
+						disabled={!g.active && activeCount >= RULES.goals.maxActive}
+						title={!g.active && activeCount >= RULES.goals.maxActive ? `Máximo de ${RULES.goals.maxActive} metas ativas` : undefined}
+						onClick={() => set({ active: !g.active })}>
+						{g.active ? 'Pausar' : 'Ativar'}
+					</button>
 					<button
 						className="px-btn text-px-red"
 						aria-label="Remover meta"
@@ -110,19 +119,19 @@ function GoalCard({ g }: { g: Goal }) {
 				<div className="grid gap-1">
 					<span className="text-px-yellow">★ Se cumprir</span>
 					<Edit wide label="Recompensa" value={g.reward} onSave={(v) => set({ reward: v })} />
-					<label className="flex items-center gap-2 text-muted-foreground">+ XP <Edit numeric label="XP ao ganhar" value={g.xpWin} onSave={(v) => set({ xpWin: toNum(v) })} /></label>
+					<label className="flex items-center gap-2 text-muted-foreground">+ XP <Edit numeric label="XP ao ganhar" value={g.xpWin} onSave={(v) => set({ xpWin: clampXp(toNum(v)) })} /></label>
 				</div>
 				<div className="grid gap-1">
 					<span className="text-px-red">⚠ Se falhar</span>
 					<Edit wide label="Penalidade" value={g.penalty} onSave={(v) => set({ penalty: v })} />
-					<label className="flex items-center gap-2 text-muted-foreground">− XP <Edit numeric label="XP ao perder" value={g.xpLose} onSave={(v) => set({ xpLose: toNum(v) })} /></label>
+					<label className="flex items-center gap-2 text-muted-foreground">− XP <Edit numeric label="XP ao perder" value={g.xpLose} onSave={(v) => set({ xpLose: clampXp(toNum(v)) })} /></label>
 				</div>
 			</div>
 		</li>
 	)
 }
 
-function NewGoal() {
+function NewGoal({ full }: { full: boolean }) {
 	const [open, setOpen] = useState(false)
 	const [title, setTitle] = useState('')
 	const [area, setArea] = useState<Area>('geral')
@@ -134,7 +143,12 @@ function NewGoal() {
 	const t = Number(target.replace(',', '.'))
 	const ok = title.trim() !== '' && t > 0
 
-	if (!open) return <button className="px-btn" onClick={() => setOpen(true)}>+ Nova meta</button>
+	if (!open)
+		return (
+			<button className="px-btn" disabled={full} title={full ? `Máximo de ${RULES.goals.maxActive} metas ativas: pause uma para criar outra` : undefined} onClick={() => setOpen(true)}>
+				+ Nova meta
+			</button>
+		)
 	return (
 		<div className="grid gap-2 sm:grid-cols-2">
 			<input className="px-input sm:col-span-2" placeholder="Título (ex.: Correr 3x na semana)" value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -178,7 +192,7 @@ function Goals() {
 	const range = seasonRange(now)
 	const season = xpBreakdown(s, range)
 	const lv = levelInfo(life.total)
-	const r = rankFor(season.total, s.settings.tiers)
+	const r = rankFor(season.total)
 	const history = seasonHistory(s, now)
 	const left = Math.max(0, Math.round((new Date(monthEnd(now)).getTime() - new Date(now).getTime()) / 86400000))
 	const chart = lastMonths(6).map((m) => {
@@ -195,7 +209,7 @@ function Goals() {
 	const done = ACHIEVEMENTS.filter((a) => s.unlocked[a.id]).length
 	const resolve = (id: string) =>
 		mutate((st) => ({ ...st, settlements: st.settlements.map((y) => (y.id === id ? { ...y, resolved: true } : y)) }))
-	const floors = [0, ...s.settings.tiers]
+	const floors = [0, ...RULES.tiers]
 	const [allRewards, setAllRewards] = useState(false)
 	const [allPenalties, setAllPenalties] = useState(false)
 	const LIMIT = 6
@@ -242,12 +256,12 @@ function Goals() {
 								<p className="mt-1 text-[16px] text-muted-foreground">{lv.title}</p>
 								<div className="mt-3 space-y-1">
 									<Bar pct={lv.pct} tone="blue" />
-									<p className="text-[13px] text-muted-foreground tabular-nums">{lv.into}/{lv.span} XP para o nível {lv.level + 1}</p>
+									<p className="text-[13px] text-muted-foreground tabular-nums">{lv.maxed ? 'Nível máximo!' : `${lv.into}/${lv.span} XP para o nível ${lv.level + 1}`}</p>
 								</div>
 							</div>
 						</div>
 						<details className="mt-4 text-[13px]">
-							<summary className="cursor-pointer text-muted-foreground">De onde vem o XP (mês | total)</summary>
+							<summary className="cursor-pointer text-muted-foreground">De onde vem o XP (mês | total) · limites diários</summary>
 							<ul className="mt-2 space-y-1">
 								{life.rows.map((row, i) => (
 									<li key={row.label} className="flex justify-between gap-3">
@@ -290,11 +304,11 @@ function Goals() {
 						))}
 					</ul>
 					<p className={`mt-3 text-[14px] ${qDone >= QUEST_MIN ? TONE_TEXT.ok : 'text-muted-foreground'}`}>
-						{qDone >= QUEST_MIN ? `★ Bônus de +${s.settings.xp.quest} XP garantido hoje!` : `Faça ${QUEST_MIN} missões hoje para ganhar +${s.settings.xp.quest} XP.`}
+						{qDone >= QUEST_MIN ? `★ Bônus de +${RULES.quest.bonus} XP garantido hoje!` : `Faça ${QUEST_MIN} missões hoje para ganhar +${RULES.quest.bonus} XP.`}
 					</p>
 				</Panel>
 
-				<Panel title="Metas do período" meta={<NewGoal />}>
+				<Panel title="Metas do período" meta={<NewGoal full={s.goals.filter((g) => g.active).length >= RULES.goals.maxActive} />}>
 					<ul className="grid gap-3">
 						{s.goals.map((g) => <GoalCard key={g.id} g={g} />)}
 						{s.goals.length === 0 && <p className="text-[14px] text-muted-foreground">Nenhuma meta. Crie a primeira.</p>}
